@@ -25,7 +25,6 @@
         .draggable:active { cursor: grabbing; opacity: 0.7; transform: scale(0.95); }
         .drop-zone { transition: background-color 0.2s; }
         .drop-zone.drag-over { background-color: #dcfce3 !important; border: 2px dashed #22c55e; }
-        .conflict-error { border: 2px solid #ef4444 !important; background-color: #fca5a5 !important; }
         .view-hidden { display: none !important; }
     </style>
 </head>
@@ -34,19 +33,22 @@
     <!-- SIDEBAR CHÍNH -->
     <aside class="w-20 lg:w-64 bg-primary text-white flex flex-col transition-all duration-300 z-50 shrink-0 shadow-lg">
         <div class="p-4 flex items-center justify-center lg:justify-start border-b border-blue-800 h-16">
-            <i class="fa-solid fa-calendar-days text-2xl lg:mr-3"></i>
-            <h1 class="text-xl font-bold font-mono tracking-wider hidden lg:block">TKB PRO</h1>
+            <i class="fa-solid fa-calendar-days text-2xl lg:mr-3 text-yellow-300"></i>
+            <h1 class="text-xl font-bold font-mono tracking-wider hidden lg:block text-yellow-300">TKB PRO</h1>
         </div>
         <nav class="flex-1 py-4 space-y-2 overflow-y-auto px-2 lg:px-4">
-            <a href="#" onclick="switchView('timetable')" id="menu-timetable" class="menu-item flex items-center justify-center lg:justify-start p-3 rounded hover:bg-blue-800 transition group">
-                <i class="fa-solid fa-table text-xl w-6 text-center"></i>
-                <span class="hidden lg:block ml-3">Không gian TKB</span>
-            </a>
             <a href="#" onclick="switchView('data-entry')" id="menu-data-entry" class="menu-item flex items-center justify-center lg:justify-start p-3 rounded bg-blue-800 font-semibold transition group">
                 <i class="fa-solid fa-database text-xl w-6 text-center text-yellow-300"></i>
                 <span class="hidden lg:block ml-3 text-yellow-300">Nhập Dữ Liệu</span>
             </a>
+            <a href="#" onclick="switchView('timetable')" id="menu-timetable" class="menu-item flex items-center justify-center lg:justify-start p-3 rounded hover:bg-blue-800 transition group">
+                <i class="fa-solid fa-table text-xl w-6 text-center"></i>
+                <span class="hidden lg:block ml-3">Không gian TKB</span>
+            </a>
         </nav>
+        <div class="p-4 text-xs text-blue-300 hidden lg:block text-center border-t border-blue-800">
+            Hỗ trợ GDPT 2018
+        </div>
     </aside>
 
     <!-- KHU VỰC LÀM VIỆC CHÍNH -->
@@ -54,79 +56,76 @@
         <header class="bg-white shadow-sm h-16 px-6 flex justify-between items-center z-10 shrink-0">
             <h2 id="topbar-title" class="text-lg font-bold text-gray-700">Quản lý Dữ liệu Phân công</h2>
             <div class="flex items-center space-x-6">
-                <div class="text-sm font-medium text-blue-800 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full">
+                <div class="text-sm font-medium text-blue-800 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full shadow-sm">
                     <i class="fa-solid fa-graduation-cap mr-1"></i> Năm học 2024-2025
                 </div>
             </div>
         </header>
 
         <!-- ========================================== -->
-        <!-- VIEW 1: NHẬP DỮ LIỆU ĐẦY ĐỦ (Phục hồi chi tiết) -->
+        <!-- VIEW 1: TRANG NHẬP DỮ LIỆU (Trang chủ) -->
         <!-- ========================================== -->
         <div id="view-data-entry" class="flex flex-1 overflow-auto p-6 flex-col lg:flex-row gap-6">
             
-            <!-- FORM NHẬP -->
+            <!-- CỘT TRÁI: FORM NHẬP -->
             <div class="w-full lg:w-1/3 bg-white p-6 rounded-lg shadow-sm border border-gray-200 h-fit mb-6 lg:mb-0">
                 <form id="dataForm" onsubmit="saveTeacherData(event)">
                     
-                    <!-- Thông tin chung -->
                     <div class="mb-5 border-b pb-4">
                         <h3 class="font-bold text-blue-800 mb-3"><i class="fa-solid fa-user text-sm mr-1"></i> 1. Thông tin chung</h3>
                         <div class="mb-3">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Họ và tên Giáo viên *</label>
-                            <input type="text" id="gv_name" required placeholder="VD: Nguyễn Văn A" class="w-full border rounded px-3 py-2 focus:ring-blue-500">
+                            <input type="text" id="gv_name" required placeholder="VD: Nguyễn Văn A" class="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Tổ chuyên môn</label>
                             <div class="flex gap-2">
-                                <select id="gv_dept" class="flex-1 border rounded px-3 py-2 focus:ring-blue-500"></select>
-                                <button type="button" onclick="addNewDept()" class="bg-gray-100 border border-gray-300 text-gray-700 px-3 py-2 rounded hover:bg-gray-200" title="Thêm Tổ mới">
+                                <select id="gv_dept" class="flex-1 border border-gray-300 rounded px-3 py-2 focus:ring-blue-500"></select>
+                                <button type="button" onclick="addNewDept()" class="bg-gray-100 border border-gray-300 text-gray-700 px-3 py-2 rounded hover:bg-gray-200 transition" title="Thêm Tổ mới">
                                     <i class="fa-solid fa-plus"></i>
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Kiêm nhiệm -->
                     <div class="mb-5 border-b pb-4">
                         <h3 class="font-bold text-blue-800 mb-3"><i class="fa-solid fa-briefcase text-sm mr-1"></i> 2. Kiêm nhiệm (Quy đổi tiết)</h3>
                         <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="GVCN"><span>Chủ nhiệm (+4)</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Tổ trưởng"><span>Tổ trưởng (+3)</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Tổ phó"><span>Tổ phó (+1)</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Bí thư Đoàn"><span>BT Đoàn (+6)</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Phó BT Đoàn"><span>Phó BT Đoàn (+2)</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Công đoàn"><span>Công đoàn (+3)</span></label>
+                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="GVCN" class="rounded text-blue-600"><span>Chủ nhiệm (+4)</span></label>
+                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Tổ trưởng" class="rounded text-blue-600"><span>Tổ trưởng (+3)</span></label>
+                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Tổ phó" class="rounded text-blue-600"><span>Tổ phó (+1)</span></label>
+                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Bí thư Đoàn" class="rounded text-blue-600"><span>BT Đoàn (+6)</span></label>
+                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Phó BT Đoàn" class="rounded text-blue-600"><span>Phó BT Đoàn (+2)</span></label>
+                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Công đoàn" class="rounded text-blue-600"><span>Công đoàn (+3)</span></label>
                         </div>
                     </div>
 
-                    <!-- Phân công giảng dạy -->
                     <div class="mb-5">
                         <div class="flex justify-between items-center mb-3">
                             <h3 class="font-bold text-blue-800"><i class="fa-solid fa-chalkboard-user text-sm mr-1"></i> 3. Phân công Dạy thực tế</h3>
-                            <button type="button" onclick="addTeachingRow()" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded border border-green-300 hover:bg-green-200">
-                                <i class="fa-solid fa-plus"></i> Thêm môn/lớp
+                            <button type="button" onclick="addTeachingRow()" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded border border-green-300 hover:bg-green-200 transition">
+                                <i class="fa-solid fa-plus mr-1"></i>Thêm môn/lớp
                             </button>
                         </div>
                         <div id="teaching_container" class="space-y-3"></div>
                     </div>
                     
-                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded shadow-md hover:bg-blue-700 transition">
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded shadow hover:bg-blue-700 transition">
                         <i class="fa-solid fa-floppy-disk mr-2"></i> LƯU DỮ LIỆU GIÁO VIÊN
                     </button>
                 </form>
             </div>
 
-            <!-- BẢNG HIỂN THỊ -->
+            <!-- CỘT PHẢI: BẢNG HIỂN THỊ DỮ LIỆU -->
             <div class="w-full lg:w-2/3 bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col h-full">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="font-bold text-gray-700 text-lg">Danh sách Phân công</h3>
-                    <div class="flex gap-2 items-center">
+                    <div class="flex gap-3 items-center">
                         <span class="text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-medium border border-blue-100">
                             Tổng: <span id="total_gv">0</span> GV
                         </span>
-                        <button onclick="mockData()" class="text-sm bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1 rounded hover:bg-purple-100 transition">
-                            <i class="fa-solid fa-vial mr-1"></i>Tạo 4 GV Test
+                        <button onclick="mockData()" class="text-sm bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded hover:bg-purple-200 transition font-medium shadow-sm">
+                            <i class="fa-solid fa-bolt mr-1"></i>Tạo nhanh 4 GV Mẫu
                         </button>
                     </div>
                 </div>
@@ -148,20 +147,22 @@
         </div>
 
         <!-- ========================================== -->
-        <!-- VIEW 2: STUDIO TKB (KÉO THẢ & AI LEFT PANEL) -->
+        <!-- VIEW 2: KHÔNG GIAN TKB (TRANG 2) -->
         <!-- ========================================== -->
         <div id="view-timetable" class="view-hidden flex-1 flex overflow-hidden relative">
             
-            <!-- PANEL BÊN TRÁI -->
+            <!-- PANEL BÊN TRÁI: ĐIỀU KHIỂN -->
             <div class="w-80 bg-white border-r border-gray-200 flex flex-col shrink-0 shadow-[2px_0_5px_rgba(0,0,0,0.02)] z-10 overflow-y-auto">
+                
                 <div class="p-5 border-b bg-gray-50/50">
                     <h3 class="font-bold text-gray-800 mb-3 text-sm uppercase tracking-wider text-gray-500"><i class="fa-solid fa-filter mr-2"></i>Bộ lọc hiển thị</h3>
                     <div class="space-y-3">
                         <select class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:ring-blue-500">
                             <option>Khối 10 (GDPT 2018)</option>
                         </select>
-                        <select id="class-filter" onchange="renderTimetable()" class="w-full border border-blue-400 rounded px-3 py-2 text-sm font-bold text-blue-700 focus:ring-blue-500 bg-white shadow-sm">
-                            <option value="">-- Chọn lớp để xem --</option>
+                        <!-- Dropdown Chọn lớp -->
+                        <select id="class-filter" onchange="renderTimetable()" class="w-full border border-blue-400 rounded px-3 py-2 text-sm font-bold text-blue-700 focus:ring-blue-500 bg-white shadow-sm cursor-pointer">
+                            <option value="">-- Chưa có lớp nào --</option>
                         </select>
                     </div>
                 </div>
@@ -169,13 +170,13 @@
                 <div class="p-5 border-b flex-1">
                     <h3 class="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wider text-gray-500"><i class="fa-solid fa-sliders mr-2"></i>Chế độ xếp lịch</h3>
                     
-                    <!-- Toggle Mode -->
+                    <!-- Nút chuyển đổi (Toggle) -->
                     <div class="flex bg-gray-100 p-1 rounded-lg mb-5 shadow-inner">
                         <button onclick="setMode('auto')" id="btn-mode-auto" class="flex-1 py-1.5 text-sm font-medium rounded-md bg-white shadow text-blue-700 transition">Tự động (AI)</button>
-                        <button onclick="setMode('manual')" id="btn-mode-manual" class="flex-1 py-1.5 text-sm font-medium rounded-md text-gray-500 hover:text-gray-700 transition">Thủ công</button>
+                        <button onclick="setMode('manual')" id="btn-mode-manual" class="flex-1 py-1.5 text-sm font-medium rounded-md text-gray-500 hover:text-gray-700 transition bg-transparent">Thủ công</button>
                     </div>
 
-                    <!-- AI Settings -->
+                    <!-- Khu vực cài đặt AI -->
                     <div id="mode-auto-settings" class="space-y-4">
                         <div class="p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm">
                             <label class="flex items-start cursor-pointer text-blue-900">
@@ -185,42 +186,44 @@
                         </div>
                         <div class="p-3 hover:bg-gray-50 border rounded-lg text-sm transition">
                             <label class="flex items-start cursor-pointer text-gray-800">
-                                <input type="checkbox" id="ai-dayoff" checked class="mt-0.5 mr-2 rounded text-blue-600"> 
+                                <input type="checkbox" id="ai-dayoff" checked class="mt-0.5 mr-2 rounded text-blue-600 focus:ring-blue-500"> 
                                 <div>
-                                    <span class="font-semibold">Cho nghỉ ngẫu nhiên 1 ngày</span>
-                                    <p class="text-[11px] text-gray-500 mt-1 leading-tight">Dành cho GV có tổng tiết <= 25 (Đảm bảo có đủ ô trống).</p>
+                                    <span class="font-semibold">Nghỉ ngẫu nhiên 1 ngày/tuần</span>
+                                    <p class="text-[11px] text-gray-500 mt-1 leading-tight">Dành cho GV có tổng tiết dạy <= 25.</p>
                                 </div>
                             </label>
                         </div>
                         <div class="p-3 hover:bg-gray-50 border rounded-lg text-sm transition">
                             <label class="flex items-start cursor-pointer text-gray-800">
-                                <input type="checkbox" id="ai-noconsecutive" checked class="mt-0.5 mr-2 rounded text-blue-600"> 
+                                <input type="checkbox" id="ai-noconsecutive" checked class="mt-0.5 mr-2 rounded text-blue-600 focus:ring-blue-500"> 
                                 <div>
                                     <span class="font-semibold">Chống xếp liền 2 tiết/môn</span>
-                                    <p class="text-[11px] text-gray-500 mt-1 leading-tight">Học sinh không học 2 tiết liên tục cùng 1 môn.</p>
+                                    <p class="text-[11px] text-gray-500 mt-1 leading-tight">Học sinh không bị học 2 tiết liên tục cùng 1 môn.</p>
                                 </div>
                             </label>
                         </div>
 
-                        <button onclick="runAutoSchedule()" id="btn-run-ai" class="w-full mt-4 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition transform active:scale-95">
-                            <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> TẠO LỊCH TỰ ĐỘNG
+                        <!-- Nút Chạy AI (Rất quan trọng) -->
+                        <button onclick="runAutoSchedule()" id="btn-run-ai" class="w-full mt-4 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition transform active:scale-95 flex justify-center items-center">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-2 text-lg"></i> TẠO LỊCH TỰ ĐỘNG
                         </button>
                         
-                        <div id="ai-progress" class="hidden mt-4 bg-gray-50 p-3 rounded-lg border">
+                        <!-- Thanh tiến trình loading -->
+                        <div id="ai-progress" class="hidden mt-4 bg-gray-50 p-3 rounded-lg border border-gray-200 shadow-inner">
                             <div class="flex justify-between mb-1 text-xs font-semibold text-blue-700">
                                 <span>AI đang giải thuật toán...</span><span id="ai-percent">0%</span>
                             </div>
-                            <div class="w-full bg-gray-200 rounded-full h-1.5">
-                                <div id="ai-bar" class="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="ai-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-200" style="width: 0%"></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Manual Settings -->
+                    <!-- Khu vực Hướng dẫn Xếp Thủ Công -->
                     <div id="mode-manual-settings" class="hidden text-sm text-center py-6 px-4 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50 text-gray-500">
                         <i class="fa-solid fa-hand-pointer text-3xl mb-3 text-gray-300"></i>
-                        <p>Bạn đang ở chế độ <b>Xếp Thủ Công</b>.</p>
-                        <p class="mt-2 text-xs">Sử dụng chuột kéo thả (<i class="fa-solid fa-arrows-up-down-left-right mx-1"></i>) trực tiếp các ô trên Bảng để hoán đổi tiết học.</p>
+                        <p>Chế độ <b>Xếp Thủ Công</b>.</p>
+                        <p class="mt-2 text-xs">Hãy sử dụng chuột bấm giữ và kéo thả (<i class="fa-solid fa-arrows-up-down-left-right mx-1"></i>) các ô tiết học ở Bảng bên phải để hoán đổi cho nhau.</p>
                     </div>
                 </div>
 
@@ -231,9 +234,10 @@
                 </div>
             </div>
 
-            <!-- LƯỚI TKB BÊN PHẢI -->
+            <!-- LƯỚI TKB BÊN PHẢI (GRID) -->
             <div class="flex-1 p-6 flex flex-col bg-gray-50/50 overflow-hidden relative">
                 <div class="bg-white flex-1 rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden relative">
+                    
                     <div class="p-3 border-b flex flex-wrap gap-4 items-center justify-between text-xs font-medium bg-gray-50 shrink-0">
                         <div class="text-sm font-bold text-gray-700 border-l-4 border-blue-500 pl-2">Lớp đang xem: <span id="lbl-current-class" class="text-blue-700 uppercase">Chưa chọn lớp</span></div>
                         <div class="flex gap-4">
@@ -256,7 +260,9 @@
                                     <th class="border-b p-3 min-w-[150px] bg-white text-blue-900">Thứ 7</th>
                                 </tr>
                             </thead>
-                            <tbody id="tkb-body"></tbody>
+                            <tbody id="tkb-body">
+                                <!-- Chỗ này sẽ hiển thị thông báo "Empty State" hoặc Lưới TKB -->
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -264,20 +270,20 @@
         </div>
     </main>
 
-    <!-- TOAST -->
+    <!-- TOAST ALERT -->
     <div id="toast" class="fixed bottom-4 right-4 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3">
         <i class="fa-solid fa-circle-check text-xl"></i><span id="toast-msg" class="font-medium"></span>
     </div>
 
     <!-- SCRIPTS -->
     <script>
-        // --- CẤU HÌNH CƠ BẢN ---
+        // --- DATA & CONFIG ---
         const DUTY_PERIODS = { "GVCN": 4, "Bí thư Đoàn": 6, "Tổ phó": 1, "Tổ trưởng": 3, "Phó BT Đoàn": 2, "Công đoàn": 3 };
         let dbTeachers = [];
         let globalSchedule = []; 
         let dbDepartments = ['Tổ Toán - Tin', 'Tổ Ngữ văn', 'Tổ Ngoại ngữ', 'Tổ Lý - Hóa - Sinh'];
 
-        // --- 1. ROUTING & UI VIEWS ---
+        // --- 1. CHUYỂN TRANG (ROUTING) ---
         function switchView(viewName) {
             document.querySelectorAll('.menu-item').forEach(el => el.classList.replace('bg-blue-800', 'hover:bg-blue-800').classList.remove('font-semibold'));
             document.querySelectorAll('.menu-item span, .menu-item i').forEach(el => el.classList.remove('text-yellow-300'));
@@ -292,13 +298,15 @@
 
             document.getElementById(`view-${viewName}`).classList.remove('view-hidden'); document.getElementById(`view-${viewName}`).classList.add('flex');
             document.getElementById('topbar-title').innerText = viewName === 'timetable' ? 'Không gian Xếp Thời Khóa Biểu' : 'Quản lý Dữ liệu Phân công';
+
+            // Cập nhật lại giao diện TKB (đề phòng có lớp mới)
+            if (viewName === 'timetable') renderTimetable();
         }
 
+        // Chuyển đổi giữa chế độ AI và Thủ công
         function setMode(mode) {
-            const btnAuto = document.getElementById('btn-mode-auto');
-            const btnManual = document.getElementById('btn-mode-manual');
-            const setAuto = document.getElementById('mode-auto-settings');
-            const setManual = document.getElementById('mode-manual-settings');
+            const btnAuto = document.getElementById('btn-mode-auto'); const btnManual = document.getElementById('btn-mode-manual');
+            const setAuto = document.getElementById('mode-auto-settings'); const setManual = document.getElementById('mode-manual-settings');
 
             if (mode === 'auto') {
                 btnAuto.className = "flex-1 py-1.5 text-sm font-medium rounded-md bg-white shadow text-blue-700 transition";
@@ -311,38 +319,32 @@
             }
         }
 
-        // --- 2. QUẢN LÝ TỔ CHUYÊN MÔN ---
+        // --- 2. QUẢN LÝ DỮ LIỆU NHẬP ---
         function renderDepartments() {
-            const select = document.getElementById('gv_dept');
-            select.innerHTML = ''; 
+            const select = document.getElementById('gv_dept'); select.innerHTML = ''; 
             dbDepartments.forEach(dept => select.innerHTML += `<option value="${dept}">${dept}</option>`);
         }
         function addNewDept() {
-            const newDept = prompt("Nhập tên Tổ chuyên môn mới:");
+            const newDept = prompt("Nhập tên Tổ chuyên môn mới (VD: Tổ Thể dục - QP):");
             if (newDept && newDept.trim() !== "") {
                 if (!dbDepartments.includes(newDept.trim())) {
-                    dbDepartments.push(newDept.trim());
-                    renderDepartments();
-                    document.getElementById('gv_dept').value = newDept.trim();
-                    showToast("Đã thêm Tổ mới!", "success");
+                    dbDepartments.push(newDept.trim()); renderDepartments();
+                    document.getElementById('gv_dept').value = newDept.trim(); showToast("Đã thêm Tổ mới!", "success");
                 }
             }
         }
 
-        // --- 3. QUẢN LÝ DỮ LIỆU NHẬP (PCCM) ---
         function addTeachingRow() {
             const row = document.createElement('div');
-            row.className = 'flex gap-2 items-center teaching-row bg-gray-50 p-2 rounded border border-gray-200 mt-2';
+            row.className = 'flex gap-2 items-center teaching-row bg-gray-50 p-2 rounded border border-gray-200 mt-2 shadow-sm';
             row.innerHTML = `
-                <input type="text" class="sub-inp w-1/3 border rounded px-2 py-1 text-sm" placeholder="Môn (Toán)" required list="subject-suggestions">
+                <input type="text" class="sub-inp w-1/3 border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-blue-500" placeholder="Môn (VD: Toán)" required list="subject-suggestions">
                 <datalist id="subject-suggestions">
-                    <option value="Toán"><option value="Ngữ văn"><option value="Tiếng Anh">
-                    <option value="Vật lý"><option value="Hóa học"><option value="Sinh học">
-                    <option value="Lịch sử"><option value="Địa lý"><option value="HĐTN-HN"><option value="GD Địa phương">
+                    <option value="Toán"><option value="Ngữ văn"><option value="Tiếng Anh"><option value="Vật lý"><option value="Hóa học"><option value="Sinh học"><option value="Lịch sử"><option value="Địa lý"><option value="HĐTN-HN"><option value="GD Địa phương">
                 </datalist>
-                <input type="text" class="cls-inp w-1/3 border rounded px-2 py-1 text-sm" placeholder="Lớp (10A1)" required>
-                <input type="number" class="prd-inp w-1/4 border rounded px-2 py-1 text-sm" placeholder="Tiết" min="1" value="2" required>
-                <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>`;
+                <input type="text" class="cls-inp w-1/3 border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-blue-500" placeholder="Lớp (VD: 10A1)" required>
+                <input type="number" class="prd-inp w-1/4 border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-blue-500" placeholder="Tiết" min="1" value="2" required>
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 bg-red-50 p-1.5 rounded transition"><i class="fa-solid fa-trash"></i></button>`;
             document.getElementById('teaching_container').appendChild(row);
         }
 
@@ -350,16 +352,12 @@
             e.preventDefault();
             let teachPeriods = 0, dutyPeriods = 0, teaching = [], dutiesList = [];
             
-            // Xử lý giảng dạy
             document.querySelectorAll('.teaching-row').forEach(row => {
                 const sub = row.querySelector('.sub-inp').value, cls = row.querySelector('.cls-inp').value, prd = parseInt(row.querySelector('.prd-inp').value);
                 if(cls && sub) { teaching.push({ sub, cls, prd }); teachPeriods += prd; }
             });
-            // Xử lý kiêm nhiệm
             Array.from(document.querySelectorAll('input[name="kiem_nhiem"]:checked')).forEach(el => {
-                let p = DUTY_PERIODS[el.value] || 0;
-                dutyPeriods += p;
-                dutiesList.push({ name: el.value, period: p });
+                let p = DUTY_PERIODS[el.value] || 0; dutyPeriods += p; dutiesList.push({ name: el.value, period: p });
             });
             
             dbTeachers.push({ 
@@ -374,26 +372,20 @@
         function renderTeachersTable() {
             const tbody = document.getElementById('dataTableBody'); tbody.innerHTML = '';
             document.getElementById('total_gv').innerText = dbTeachers.length;
-            if(!dbTeachers.length) return tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-gray-500 italic">Chưa có dữ liệu</td></tr>`;
+            if(!dbTeachers.length) return tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-gray-400 italic">Chưa có dữ liệu giáo viên nào.</td></tr>`;
             
             dbTeachers.forEach(t => {
-                let colorClass = "text-green-600";
-                if (t.total > 17) colorClass = "text-red-600"; else if (t.total < 17) colorClass = "text-yellow-600";
-
+                let colorClass = t.total > 17 ? "text-red-600" : (t.total < 17 ? "text-yellow-600" : "text-green-600");
                 tbody.innerHTML += `
                 <tr class="border-b hover:bg-blue-50 transition">
                     <td class="border p-2"><b>${t.name}</b><br><span class="text-[11px] text-gray-500">${t.dept}</span></td>
-                    <td class="border p-2 align-top">
-                        ${t.duties.map(d => `<span class="bg-yellow-100 text-xs px-2 py-1 border border-yellow-200 rounded mr-1 mb-1 inline-block">${d.name} <b class="text-blue-600">(+${d.period})</b></span>`).join('') || '<span class="text-gray-400 italic text-xs">Không có</span>'}
-                    </td>
-                    <td class="border p-2 align-top">
-                        ${t.teaching.map(tc => `<div class="mb-1 text-xs"><b>${tc.sub}</b> <i class="fa-solid fa-arrow-right text-[9px] mx-1 text-gray-400"></i> Lớp ${tc.cls} <span class="text-gray-500">(${tc.prd}t)</span></div>`).join('')}
-                    </td>
+                    <td class="border p-2 align-top">${t.duties.map(d => `<span class="bg-yellow-100 text-xs px-2 py-1 border border-yellow-200 rounded mr-1 mb-1 inline-block">${d.name} <b class="text-blue-600">(+${d.period})</b></span>`).join('') || '<span class="text-gray-400 italic text-xs">Không có</span>'}</td>
+                    <td class="border p-2 align-top">${t.teaching.map(tc => `<div class="mb-1 text-xs"><b>${tc.sub}</b> <i class="fa-solid fa-arrow-right text-[9px] mx-1 text-gray-400"></i> Lớp ${tc.cls} <span class="text-gray-500">(${tc.prd}t)</span></div>`).join('')}</td>
                     <td class="border p-2 text-center">
                         <div class="font-bold text-lg ${colorClass}">${t.total}</div>
                         <div class="text-[10px] text-gray-500 bg-gray-100 rounded px-1 mt-1 inline-block border">Dạy: ${t.teachPeriods} | KN: ${t.dutyPeriods}</div>
                     </td>
-                    <td class="border p-2 text-center"><button onclick="dbTeachers=dbTeachers.filter(x=>x.id!==${t.id});renderTeachersTable()" class="text-red-500 bg-red-50 p-1.5 rounded hover:bg-red-100 transition"><i class="fa-solid fa-trash"></i></button></td>
+                    <td class="border p-2 text-center"><button onclick="dbTeachers=dbTeachers.filter(x=>x.id!==${t.id});renderTeachersTable()" class="text-red-500 bg-red-50 p-2 rounded hover:bg-red-100 transition"><i class="fa-solid fa-trash"></i></button></td>
                 </tr>`;
             });
             updateClassDropdown();
@@ -403,12 +395,22 @@
             let classes = new Set();
             dbTeachers.forEach(t => t.teaching.forEach(tc => classes.add(tc.cls)));
             const sel = document.getElementById('class-filter');
-            sel.innerHTML = '<option value="">-- Chọn Lớp --</option>';
+            const currentSelection = sel.value; // Nhớ lựa chọn hiện tại
+            
+            sel.innerHTML = '<option value="">-- Chọn Lớp để xem --</option>';
             Array.from(classes).sort().forEach(cls => sel.innerHTML += `<option value="${cls}">Lớp ${cls}</option>`);
-            if(classes.size > 0 && sel.value === "") { sel.selectedIndex = 1; renderTimetable(); }
+            
+            // Tự động giữ lớp đã chọn, hoặc tự chọn lớp đầu tiên nếu dropdown vừa được nạp đầy
+            if(classes.size > 0) {
+                if (currentSelection && classes.has(currentSelection)) {
+                    sel.value = currentSelection;
+                } else {
+                    sel.selectedIndex = 1; 
+                }
+            }
         }
 
-        // --- 4. THUẬT TOÁN AI & BẢNG TKB ---
+        // --- 3. THUẬT TOÁN AI & HIỂN THỊ BẢNG TKB ---
         function runAutoSchedule() {
             if(dbTeachers.length === 0) {
                 switchView('data-entry');
@@ -423,8 +425,12 @@
                     clearInterval(interval); executeAlgorithm(); 
                     setTimeout(() => {
                         btn.classList.remove('hidden'); progress.classList.add('hidden'); bar.style.width = '0%';
-                        showToast("Khởi tạo TKB thành công!", "success"); renderTimetable();
-                    }, 300);
+                        
+                        // ĐẢM BẢO TỰ ĐỘNG HIỂN THỊ LỚP SAU KHI CHẠY
+                        updateClassDropdown(); 
+                        renderTimetable();
+                        showToast("Tạo lịch thành công!", "success"); 
+                    }, 400);
                 }
             }, 150);
         }
@@ -465,16 +471,39 @@
         }
 
         function clearTimetable() {
-            if(confirm("Xác nhận xóa trắng Lưới TKB hiện tại? Dữ liệu giáo viên sẽ không bị mất.")) {
-                globalSchedule = []; renderTimetable(); showToast("Đã xóa Lưới TKB", "success");
+            if(confirm("Bạn có chắc muốn xóa sạch Bảng TKB hiện tại? Dữ liệu giáo viên vẫn an toàn.")) {
+                globalSchedule = []; renderTimetable(); showToast("Đã xóa trắng Lưới TKB", "success");
             }
         }
 
+        // HÀM RENDER THÔNG MINH (CÓ EMPTY STATE)
         function renderTimetable() {
-            const selectedClass = document.getElementById('class-filter').value;
-            document.getElementById('lbl-current-class').innerText = selectedClass ? `Lớp ${selectedClass}` : "Chưa chọn lớp";
+            const sel = document.getElementById('class-filter');
             
+            // Tự động chọn nếu dropdown có lớp mà người dùng chưa chọn
+            if (sel.value === "" && sel.options.length > 1) {
+                sel.selectedIndex = 1;
+            }
+            
+            const selectedClass = sel.value;
+            document.getElementById('lbl-current-class').innerText = selectedClass ? `Lớp ${selectedClass}` : "Chưa chọn lớp";
             const tbody = document.getElementById('tkb-body');
+            
+            // 🛑 EMPTY STATE UI: Bảng chưa có dữ liệu
+            if (globalSchedule.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="p-16 text-center text-gray-500 bg-gray-50 h-[300px] border-b border-gray-200">
+                            <i class="fa-solid fa-calendar-xmark text-6xl mb-4 text-blue-200"></i>
+                            <h3 class="text-xl font-bold text-gray-700">Chưa có dữ liệu Thời Khóa Biểu</h3>
+                            <p class="mt-2 text-sm max-w-md mx-auto leading-relaxed">Hệ thống chưa tạo lịch. Vui lòng nhìn sang bảng điều khiển bên trái, chọn tab <b>Tự động (AI)</b> và bấm nút <b class="text-yellow-600">"TẠO LỊCH TỰ ĐỘNG"</b> để bắt đầu.</p>
+                        </td>
+                    </tr>
+                `;
+                return; // Dừng lại ở đây, không vẽ bảng kẻ ô nữa
+            }
+
+            // Vẽ bảng kẻ ô TKB (Khi đã có dữ liệu)
             const days = ['t2', 't3', 't4', 't5', 't6', 't7'];
             let html = '';
             
@@ -544,15 +573,14 @@
             dbTeachers = [
                 {id: 1, name: "Thầy A", dept: "Tổ Toán - Tin", duties: [{name: "GVCN", period: 4}, {name: "Tổ trưởng", period: 3}], teaching: [{sub: "Toán", cls: "10A1", prd: 4}, {sub: "Toán", cls: "10A2", prd: 4}], teachPeriods: 8, dutyPeriods: 7, total: 15},
                 {id: 2, name: "Cô B", dept: "Tổ Ngữ văn", duties: [{name: "Bí thư Đoàn", period: 6}], teaching: [{sub: "Ngữ văn", cls: "10A1", prd: 4}, {sub: "Ngữ văn", cls: "10A2", prd: 4}, {sub: "HĐTN-HN", cls: "10A1", prd: 2}], teachPeriods: 10, dutyPeriods: 6, total: 16},
-                {id: 3, name: "Thầy C", dept: "Tổ Ngoại ngữ", duties: [], teaching: [{sub: "Tiếng Anh", cls: "10A1", prd: 3}, {sub: "Tiếng Anh", cls: "10A2", prd: 3}, {sub: "Tiếng Anh", cls: "10A3", prd: 3}], teachPeriods: 9, dutyPeriods: 0, total: 9},
+                {id: 3, name: "Thầy C", dept: "Tổ Ngoại ngữ", duties: [], teaching: [{sub: "Tiếng Anh", cls: "10A1", prd: 3}, {sub: "Tiếng Anh", cls: "10A2", prd: 3}], teachPeriods: 6, dutyPeriods: 0, total: 6},
                 {id: 4, name: "Cô D", dept: "Tổ Lý - Hóa - Sinh", duties: [{name: "Tổ phó", period: 1}], teaching: [{sub: "Vật lý", cls: "10A1", prd: 2}, {sub: "Vật lý", cls: "10A2", prd: 2}, {sub: "Hóa học", cls: "10A1", prd: 2}], teachPeriods: 6, dutyPeriods: 1, total: 7}
             ];
-            renderTeachersTable(); showToast("Đã tạo 4 dữ liệu Giáo viên test!", "success");
+            renderTeachersTable(); showToast("Đã bốc 4 Giáo viên Test vào CSDL!", "success");
         }
 
         window.onload = () => { 
             renderDepartments(); renderTimetable(); addTeachingRow();
-            // Mặc định khởi chạy trang Nhập dữ liệu để người dùng biết phải nhập liệu trước
             switchView('data-entry'); 
         };
     </script>
