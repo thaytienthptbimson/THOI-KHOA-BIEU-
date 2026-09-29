@@ -138,23 +138,23 @@
                         </div>
                     </div>
 
-                    <!-- 2. KIÊM NHIỆM (Đã bổ sung đầy đủ) -->
+                    <!-- 2. KIÊM NHIỆM -->
                     <div class="mb-5 border-b pb-4">
-                        <h3 class="font-bold text-blue-800 mb-3"><i class="fa-solid fa-briefcase text-sm mr-1"></i> 2. Kiêm nhiệm</h3>
+                        <h3 class="font-bold text-blue-800 mb-3"><i class="fa-solid fa-briefcase text-sm mr-1"></i> 2. Kiêm nhiệm (Quy đổi tiết)</h3>
                         <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="GVCN"><span>GV Chủ nhiệm</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Tổ trưởng"><span>Tổ trưởng CM</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Tổ phó"><span>Tổ phó CM</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Bí thư Đoàn"><span>Bí thư Đoàn</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Phó BT Đoàn"><span>Phó BT Đoàn</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Công đoàn"><span>Công đoàn</span></label>
+                            <label class="flex items-center space-x-2" title="Quy đổi 4 tiết"><input type="checkbox" name="kiem_nhiem" value="GVCN"><span>GV Chủ nhiệm</span></label>
+                            <label class="flex items-center space-x-2" title="Quy đổi 3 tiết"><input type="checkbox" name="kiem_nhiem" value="Tổ trưởng"><span>Tổ trưởng CM</span></label>
+                            <label class="flex items-center space-x-2" title="Quy đổi 1 tiết"><input type="checkbox" name="kiem_nhiem" value="Tổ phó"><span>Tổ phó CM</span></label>
+                            <label class="flex items-center space-x-2" title="Quy đổi 6 tiết"><input type="checkbox" name="kiem_nhiem" value="Bí thư Đoàn"><span>Bí thư Đoàn</span></label>
+                            <label class="flex items-center space-x-2" title="Quy đổi 2 tiết"><input type="checkbox" name="kiem_nhiem" value="Phó BT Đoàn"><span>Phó BT Đoàn</span></label>
+                            <label class="flex items-center space-x-2" title="Quy đổi 3 tiết"><input type="checkbox" name="kiem_nhiem" value="Công đoàn"><span>Công đoàn</span></label>
                         </div>
                     </div>
 
                     <!-- 3. PHÂN CÔNG GIẢNG DẠY -->
                     <div class="mb-5">
                         <div class="flex justify-between items-center mb-3">
-                            <h3 class="font-bold text-blue-800"><i class="fa-solid fa-chalkboard-user text-sm mr-1"></i> 3. Phân công</h3>
+                            <h3 class="font-bold text-blue-800"><i class="fa-solid fa-chalkboard-user text-sm mr-1"></i> 3. Phân công Dạy thực tế</h3>
                             <button type="button" onclick="addTeachingRow()" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded border border-green-300">
                                 <i class="fa-solid fa-plus"></i> Thêm môn/lớp
                             </button>
@@ -163,7 +163,7 @@
                     </div>
                     
                     <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition">
-                        <i class="fa-solid fa-floppy-disk mr-2"></i> LƯU GIÁO VIÊN
+                        <i class="fa-solid fa-floppy-disk mr-2"></i> LƯU DỮ LIỆU
                     </button>
                 </form>
             </div>
@@ -181,10 +181,10 @@
                         <thead>
                             <tr class="bg-gray-100 text-gray-700">
                                 <th class="border p-2 text-left">Họ Tên / Tổ</th>
-                                <th class="border p-2 text-left">Kiêm nhiệm</th>
-                                <th class="border p-2 text-left">Giảng dạy (Môn - Lớp - Tiết)</th>
-                                <th class="border p-2 text-center w-20">Số tiết</th>
-                                <th class="border p-2 text-center w-16">Xóa</th>
+                                <th class="border p-2 text-left w-1/4">Kiêm nhiệm</th>
+                                <th class="border p-2 text-left w-1/3">Dạy thực tế (Môn - Lớp - Tiết)</th>
+                                <th class="border p-2 text-center w-28">Tổng tiết<br><span class="text-[10px] font-normal text-gray-500">(Định mức 17)</span></th>
+                                <th class="border p-2 text-center w-12">Xóa</th>
                             </tr>
                         </thead>
                         <tbody id="dataTableBody"></tbody>
@@ -202,6 +202,17 @@
 
     <!-- SCRIPT -->
     <script>
+        // --- BẢNG QUY ĐỔI TIẾT KIÊM NHIỆM ---
+        // Bạn có thể chỉnh sửa số tiết tại đây nếu nhà trường có quy định khác
+        const DUTY_PERIODS = {
+            "GVCN": 4,          // Chủ nhiệm
+            "Bí thư Đoàn": 6,   // Bí thư đoàn trường
+            "Tổ phó": 1,        // Tổ phó chuyên môn
+            "Tổ trưởng": 3,     // Tổ trưởng chuyên môn
+            "Phó BT Đoàn": 2,   // Phó bí thư đoàn
+            "Công đoàn": 3      // Công đoàn
+        };
+
         // --- ROUTING ---
         function switchView(viewName) {
             document.querySelectorAll('.menu-item').forEach(el => el.classList.replace('bg-blue-800', 'hover:bg-blue-800'));
@@ -217,7 +228,7 @@
             document.getElementById('topbar-title').innerText = viewName === 'timetable' ? "Hiển thị Thời Khóa Biểu" : "Nhập dữ liệu PCCM";
         }
 
-        // --- QUẢN LÝ TỔ CHUYÊN MÔN (ĐỘNG) ---
+        // --- QUẢN LÝ TỔ CHUYÊN MÔN ---
         let dbDepartments = ['Tổ Toán - Tin', 'Tổ Ngữ văn', 'Tổ Ngoại ngữ'];
 
         function renderDepartments() {
@@ -280,16 +291,42 @@
 
         function saveTeacherData(e) {
             e.preventDefault();
-            let total = 0, teaching = [];
+            
+            // 1. Tính toán số tiết Giảng dạy thực tế
+            let teachPeriods = 0; 
+            let teaching = [];
             document.querySelectorAll('.teaching-row').forEach(row => {
-                const sub = row.querySelector('.sub-inp').value, cls = row.querySelector('.cls-inp').value, prd = parseInt(row.querySelector('.prd-inp').value);
-                if(cls && sub) { teaching.push({ sub, cls, prd }); total += prd; }
+                const sub = row.querySelector('.sub-inp').value;
+                const cls = row.querySelector('.cls-inp').value;
+                const prd = parseInt(row.querySelector('.prd-inp').value);
+                if(cls && sub) { 
+                    teaching.push({ sub, cls, prd }); 
+                    teachPeriods += prd; 
+                }
             });
             
+            // 2. Tính toán số tiết Kiêm nhiệm
+            let dutyPeriods = 0;
+            let dutiesList = [];
+            Array.from(document.querySelectorAll('input[name="kiem_nhiem"]:checked')).forEach(el => {
+                let dutyName = el.value;
+                let periodValue = DUTY_PERIODS[dutyName] || 0;
+                dutyPeriods += periodValue;
+                dutiesList.push({ name: dutyName, period: periodValue });
+            });
+
+            // 3. Tổng cộng số tiết quy đổi
+            let totalPeriods = teachPeriods + dutyPeriods;
+            
             dbTeachers.push({
-                id: Date.now(), name: document.getElementById('gv_name').value, dept: document.getElementById('gv_dept').value,
-                duties: Array.from(document.querySelectorAll('input[name="kiem_nhiem"]:checked')).map(el => el.value),
-                teaching, total
+                id: Date.now(), 
+                name: document.getElementById('gv_name').value, 
+                dept: document.getElementById('gv_dept').value,
+                duties: dutiesList,
+                teaching: teaching, 
+                teachPeriods: teachPeriods,
+                dutyPeriods: dutyPeriods,
+                total: totalPeriods
             });
             
             renderTeachersTable(); 
@@ -305,13 +342,31 @@
             if(!dbTeachers.length) return tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-gray-500">Chưa có dữ liệu</td></tr>`;
             
             dbTeachers.forEach(t => {
+                // Hiệu ứng màu cho Tổng tiết (Chuẩn là 17)
+                let totalColorClass = "text-green-600";
+                if (t.total > 17) totalColorClass = "text-red-600";
+                else if (t.total < 17) totalColorClass = "text-yellow-600";
+
                 tbody.innerHTML += `
                 <tr class="border-b hover:bg-blue-50">
                     <td class="border p-2"><b>${t.name}</b><br><span class="text-xs text-gray-500">${t.dept}</span></td>
-                    <td class="border p-2">${t.duties.map(d=>`<span class="bg-yellow-100 text-xs px-2 py-1 border rounded mr-1 inline-block mb-1 shadow-sm">${d}</span>`).join('')||'-'}</td>
-                    <td class="border p-2">${t.teaching.map(tc=>`<div><b>${tc.sub}</b> <i class="fa-solid fa-arrow-right text-[10px]"></i> ${tc.cls} (${tc.prd}t)</div>`).join('')}</td>
-                    <td class="border p-2 text-center font-bold ${t.total>17?'text-red-600':'text-green-600'}">${t.total}</td>
-                    <td class="border p-2 text-center"><button onclick="dbTeachers=dbTeachers.filter(x=>x.id!==${t.id});renderTeachersTable()" class="text-red-500"><i class="fa-solid fa-trash"></i></button></td>
+                    
+                    <td class="border p-2 align-top">
+                        ${t.duties.map(d => `<span class="bg-yellow-100 text-xs px-2 py-1 border rounded mr-1 inline-block mb-1 shadow-sm">${d.name} <b class="text-blue-600">(+${d.period}t)</b></span>`).join('') || '<span class="text-gray-400 italic text-xs">Không có</span>'}
+                    </td>
+                    
+                    <td class="border p-2 align-top">
+                        ${t.teaching.map(tc => `<div class="mb-1"><b>${tc.sub}</b> <i class="fa-solid fa-arrow-right text-[10px] mx-1"></i> ${tc.cls} <span class="text-gray-500 text-xs">(${tc.prd}t)</span></div>`).join('')}
+                    </td>
+                    
+                    <td class="border p-2 text-center">
+                        <div class="font-bold text-lg ${totalColorClass}">${t.total}</div>
+                        <div class="text-[10px] text-gray-500 bg-gray-100 rounded px-1 mt-1 inline-block">
+                            Dạy: ${t.teachPeriods} | KN: ${t.dutyPeriods}
+                        </div>
+                    </td>
+                    
+                    <td class="border p-2 text-center"><button onclick="dbTeachers=dbTeachers.filter(x=>x.id!==${t.id});renderTeachersTable()" class="text-red-500 bg-red-50 p-1 rounded hover:bg-red-100"><i class="fa-solid fa-trash"></i></button></td>
                 </tr>`;
             });
         }
