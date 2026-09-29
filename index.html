@@ -56,7 +56,7 @@
             <h2 id="topbar-title" class="text-lg font-bold text-gray-700">Quản lý Dữ liệu Phân công</h2>
             <div class="flex items-center space-x-6">
                 <div class="text-sm font-medium text-blue-800 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full shadow-sm flex items-center">
-                    <i class="fa-solid fa-graduation-cap mr-2"></i> <span id="school-year">Năm học 2026-2027</span>
+                    <i class="fa-solid fa-graduation-cap mr-2"></i> <span id="school-year">Năm học 2024-2025</span>
                 </div>
             </div>
         </header>
@@ -143,13 +143,11 @@
 
         <!-- VIEW 2: KHÔNG GIAN TKB -->
         <div id="view-timetable" class="view-hidden flex-1 flex overflow-hidden relative">
-            
             <!-- BẢNG ĐIỀU KHIỂN BÊN TRÁI -->
             <div class="w-80 bg-white border-r border-gray-200 flex flex-col shrink-0 shadow-[2px_0_5px_rgba(0,0,0,0.02)] z-10 overflow-y-auto">
                 <div class="p-5 border-b bg-gray-50/50">
                     <h3 class="font-bold text-gray-800 mb-3 text-sm uppercase tracking-wider text-gray-500"><i class="fa-solid fa-filter mr-2"></i>Bộ lọc hiển thị</h3>
                     <div class="space-y-3">
-                        <!-- TÍNH NĂNG MỚI: CHỌN XEM THEO LỚP HOẶC GIÁO VIÊN -->
                         <select id="view-type" onchange="updateFilterDropdown()" class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:ring-blue-500">
                             <option value="class">Xem TKB theo Lớp học</option>
                             <option value="teacher">Xem TKB theo Giáo viên</option>
@@ -276,14 +274,14 @@
                         <input type="radio" name="export-format" value="docx" checked class="mt-1 accent-blue-600">
                         <span>
                             <span class="block font-semibold text-sm text-gray-800"><i class="fa-solid fa-file-word text-blue-600 mr-1"></i>Word (.docx)</span>
-                            <span class="block text-xs text-gray-500">Khổ A4 ngang, mỗi lớp hoặc giáo viên một trang, sẵn sàng để in.</span>
+                            <span class="block text-xs text-gray-500">Khổ A4 ngang, định dạng bảng hoàn chỉnh sẵn sàng để in.</span>
                         </span>
                     </label>
                     <label class="flex items-start gap-3 border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-gray-50">
                         <input type="radio" name="export-format" value="xlsx" class="mt-1 accent-blue-600">
                         <span>
                             <span class="block font-semibold text-sm text-gray-800"><i class="fa-solid fa-file-excel text-green-600 mr-1"></i>Excel (.xlsx)</span>
-                            <span class="block text-xs text-gray-500">Mỗi lớp hoặc giáo viên một trang tính. Khi xuất nhiều lớp/GV có thêm trang tính "Danh sách tiết" để lọc.</span>
+                            <span class="block text-xs text-gray-500">Định dạng bảng tính chuẩn, dễ dàng chỉnh sửa lại màu sắc/font chữ.</span>
                         </span>
                     </label>
                 </div>
@@ -298,11 +296,11 @@
                     </label>
                     <label class="flex items-center gap-3 border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-gray-50">
                         <input type="radio" name="export-scope" value="classes" class="accent-blue-600">
-                        <span>Tất cả lớp (<span id="export-classes-count">0</span> lớp)</span>
+                        <span>Từng lớp học (<span id="export-classes-count">0</span> lớp - một lớp/trang)</span>
                     </label>
-                    <label class="flex items-center gap-3 border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-gray-50">
-                        <input type="radio" name="export-scope" value="teachers" class="accent-blue-600">
-                        <span>Tất cả giáo viên (<span id="export-teachers-count">0</span> GV)</span>
+                    <label class="flex items-center gap-3 border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-gray-50 bg-blue-50 border-blue-200">
+                        <input type="radio" name="export-scope" value="master_teachers" class="accent-blue-600">
+                        <span><b class="text-blue-800">TKB Tổng hợp GV</b> (Toàn trường chung 1 trang)</span>
                     </label>
                 </div>
             </fieldset>
@@ -329,22 +327,26 @@
         let dbTeachers = [];
         let globalSchedule = [];
         let dbDepartments = [...DEFAULT_DEPTS];
-        let lastReport = null;      // báo cáo của lần xếp lịch gần nhất (không lưu vào localStorage)
+        let lastReport = null;
         let isScheduling = false;
         let idCounter = 0;
         let toastTimer = null;
 
         // --- TIỆN ÍCH ---
         const $ = id => document.getElementById(id);
-        function esc(v) {
-            return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        }
+        function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
         function newCellId() { idCounter++; return `cell_${Date.now()}_${idCounter}`; }
         function isHdtnSubject(sub) { return sub.includes('HĐTN') || sub.includes('GD '); }
         function slotLabel(d, p) { return `Thứ ${d.slice(1)}, tiết ${p.slice(1)}`; }
-        function shuffle(arr) {
-            for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
-            return arr;
+        function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+
+        function getColName(n) {
+            let s = "";
+            while(n >= 0) {
+                s = String.fromCharCode(65 + (n % 26)) + s;
+                n = Math.floor(n / 26) - 1;
+            }
+            return s;
         }
 
         // --- LOCAL STORAGE ---
@@ -357,14 +359,9 @@
         }
 
         function loadDataFromStorage() {
-            const read = (key) => {
-                try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; }
-                catch (e) { console.warn('Dữ liệu lưu trữ bị lỗi:', key, e); return null; }
-            };
+            const read = (key) => { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } };
             const t = read('tkb_teachers'), s = read('tkb_schedule'), d = read('tkb_departments');
-            if (Array.isArray(t)) {
-                dbTeachers = t.map(x => ({ ...x, duties: Array.isArray(x.duties) ? x.duties : [], teaching: Array.isArray(x.teaching) ? x.teaching : [] }));
-            }
+            if (Array.isArray(t)) dbTeachers = t.map(x => ({ ...x, duties: Array.isArray(x.duties) ? x.duties : [], teaching: Array.isArray(x.teaching) ? x.teaching : [] }));
             if (Array.isArray(s)) globalSchedule = s;
             if (Array.isArray(d) && d.length) dbDepartments = d;
         }
@@ -372,17 +369,13 @@
         function clearAllSystemData() {
             if (confirm("CẢNH BÁO: Hành động này sẽ xóa vĩnh viễn toàn bộ Giáo viên và Thời khóa biểu hiện tại. Bạn có chắc chắn không?")) {
                 try { ['tkb_teachers', 'tkb_schedule', 'tkb_departments'].forEach(k => localStorage.removeItem(k)); } catch (e) {}
-                dbTeachers = []; globalSchedule = []; lastReport = null;
-                dbDepartments = [...DEFAULT_DEPTS];
-                renderDepartments(); renderTeachersTable(); renderScheduleReport();
-                showToast("Đã dọn dẹp sạch sẽ Hệ thống!", "success");
+                dbTeachers = []; globalSchedule = []; lastReport = null; dbDepartments = [...DEFAULT_DEPTS];
+                renderDepartments(); renderTeachersTable(); renderScheduleReport(); showToast("Đã dọn dẹp sạch sẽ Hệ thống!", "success");
             }
         }
 
         // --- 1. CHUYỂN TRANG ---
         function switchView(viewName) {
-            // Lưu ý: classList.replace() trả về true/false chứ không trả về classList,
-            // nên không được nối chuỗi .classList.add(...) phía sau (lỗi cũ làm hàm này bị dừng giữa chừng).
             document.querySelectorAll('.menu-item').forEach(el => {
                 const active = el.id === `menu-${viewName}`;
                 el.classList.toggle('bg-blue-800', active);
@@ -405,7 +398,6 @@
         function setMode(mode) {
             const btnAuto = $('btn-mode-auto'), btnManual = $('btn-mode-manual');
             const setAuto = $('mode-auto-settings'), setManual = $('mode-manual-settings');
-
             if (mode === 'auto') {
                 btnAuto.className = "flex-1 py-1.5 text-sm font-medium rounded-md bg-white shadow text-blue-700 transition";
                 btnManual.className = "flex-1 py-1.5 text-sm font-medium rounded-md text-gray-500 hover:text-gray-700 transition bg-transparent";
@@ -418,33 +410,24 @@
         }
 
         // --- 2. NHẬP DỮ LIỆU ---
-        function renderDepartments() {
-            const select = $('gv_dept');
-            select.innerHTML = dbDepartments.map(dept => `<option value="${esc(dept)}">${esc(dept)}</option>`).join('');
-        }
+        function renderDepartments() { $('gv_dept').innerHTML = dbDepartments.map(dept => `<option value="${esc(dept)}">${esc(dept)}</option>`).join(''); }
         function addNewDept() {
             const newDept = prompt("Nhập tên Tổ chuyên môn mới (VD: Tổ Thể dục - QP):");
-            if (newDept && newDept.trim() !== "") {
-                if (!dbDepartments.includes(newDept.trim())) {
-                    dbDepartments.push(newDept.trim()); saveDataToStorage(); renderDepartments();
-                    $('gv_dept').value = newDept.trim(); showToast("Đã thêm Tổ mới!", "success");
-                }
+            if (newDept && newDept.trim() !== "" && !dbDepartments.includes(newDept.trim())) {
+                dbDepartments.push(newDept.trim()); saveDataToStorage(); renderDepartments();
+                $('gv_dept').value = newDept.trim(); showToast("Đã thêm Tổ mới!", "success");
             }
         }
-
         function ensureSubjectDatalist() {
             if ($('subject-suggestions')) return;
-            const dl = document.createElement('datalist');
-            dl.id = 'subject-suggestions';
+            const dl = document.createElement('datalist'); dl.id = 'subject-suggestions';
             dl.innerHTML = ['Toán', 'Ngữ văn', 'Tiếng Anh', 'Vật lý', 'Hóa học', 'Sinh học', 'HĐTN-HN', 'GD Địa phương'].map(s => `<option value="${s}">`).join('');
             document.body.appendChild(dl);
         }
-
         function addTeachingRow() {
             const row = document.createElement('div');
             row.className = 'flex gap-2 items-center teaching-row bg-gray-50 p-2 rounded border border-gray-200 mt-2 shadow-sm';
-            row.innerHTML = `
-                <input type="text" class="sub-inp w-1/3 border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-blue-500" placeholder="Môn (VD: Toán)" required list="subject-suggestions">
+            row.innerHTML = `<input type="text" class="sub-inp w-1/3 border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-blue-500" placeholder="Môn (VD: Toán)" required list="subject-suggestions">
                 <input type="text" class="cls-inp w-1/3 border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-blue-500" placeholder="Lớp (VD: 10A1)" required>
                 <input type="number" class="prd-inp w-1/4 border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-blue-500" placeholder="Tiết" min="1" value="2" required>
                 <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 bg-red-50 p-1.5 rounded transition"><i class="fa-solid fa-trash"></i></button>`;
@@ -454,15 +437,11 @@
         function saveTeacherData(e) {
             e.preventDefault();
             const name = $('gv_name').value.trim();
-            if (dbTeachers.some(t => t.name.toLowerCase() === name.toLowerCase())) {
-                return showToast("Đã có giáo viên trùng tên. Hãy thêm ký hiệu phân biệt (VD: Nguyễn Văn A - Toán).", "error");
-            }
+            if (dbTeachers.some(t => t.name.toLowerCase() === name.toLowerCase())) return showToast("Đã có giáo viên trùng tên. Hãy thêm ký hiệu phân biệt (VD: Nguyễn Văn A - Toán).", "error");
 
             let teachPeriods = 0, dutyPeriods = 0, teaching = [], dutiesList = [];
             document.querySelectorAll('.teaching-row').forEach(row => {
-                const sub = row.querySelector('.sub-inp').value.trim();
-                const cls = row.querySelector('.cls-inp').value.trim().toUpperCase();
-                const prd = parseInt(row.querySelector('.prd-inp').value);
+                const sub = row.querySelector('.sub-inp').value.trim(), cls = row.querySelector('.cls-inp').value.trim().toUpperCase(), prd = parseInt(row.querySelector('.prd-inp').value);
                 if (cls && sub && prd > 0) { teaching.push({ sub, cls, prd }); teachPeriods += prd; }
             });
             Array.from(document.querySelectorAll('input[name="kiem_nhiem"]:checked')).forEach(el => {
@@ -470,96 +449,61 @@
             });
 
             dbTeachers.push({ id: Date.now(), name, dept: $('gv_dept').value, duties: dutiesList, teaching, teachPeriods, dutyPeriods, total: teachPeriods + dutyPeriods });
-
-            saveDataToStorage(); renderTeachersTable();
-            e.target.reset(); $('teaching_container').innerHTML = ''; addTeachingRow();
-            showToast("Lưu Dữ liệu thành công!", "success");
+            saveDataToStorage(); renderTeachersTable(); e.target.reset(); $('teaching_container').innerHTML = ''; addTeachingRow(); showToast("Lưu Dữ liệu thành công!", "success");
         }
 
         function deleteTeacher(id) {
-            const t = dbTeachers.find(x => x.id === id);
-            if (!t) return;
-            dbTeachers = dbTeachers.filter(x => x.id !== id);
-            globalSchedule = globalSchedule.filter(s => s.teacher !== t.name); // xóa luôn các tiết đã xếp của GV này
+            const t = dbTeachers.find(x => x.id === id); if (!t) return;
+            dbTeachers = dbTeachers.filter(x => x.id !== id); globalSchedule = globalSchedule.filter(s => s.teacher !== t.name);
             saveDataToStorage(); renderTeachersTable();
         }
 
-        // Danh sách Phân công (bảng bên phải ở trang Nhập Dữ Liệu)
         function renderTeachersTable() {
-            const tbody = $('dataTableBody');
-            const totalEl = $('total_gv');
+            const tbody = $('dataTableBody'), totalEl = $('total_gv');
             if (totalEl) totalEl.innerText = dbTeachers.length;
-
-            if (!dbTeachers.length) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-gray-400 italic">Chưa có dữ liệu.</td></tr>`;
-            } else {
-                tbody.innerHTML = dbTeachers.map(t => {
-                    const colorClass = t.total > 17 ? "text-red-600" : (t.total < 17 ? "text-yellow-600" : "text-green-600");
-                    const duties = (t.duties || []).map(d => `<span class="bg-yellow-100 text-xs px-2 py-1 border border-yellow-200 rounded mr-1 mb-1 inline-block">${esc(d.name)} <b class="text-blue-600">(+${esc(d.period)})</b></span>`).join('') || '<span class="text-gray-400 italic text-xs">Không có</span>';
-                    const teaching = (t.teaching || []).map(tc => `<div class="mb-1 text-xs"><b>${esc(tc.sub)}</b> <i class="fa-solid fa-arrow-right text-[9px] mx-1 text-gray-400"></i> Lớp ${esc(tc.cls)} <span class="text-gray-500">(${esc(tc.prd)}t)</span></div>`).join('') || '<span class="text-gray-400 italic text-xs">Chưa có tiết dạy</span>';
-                    return `
-                    <tr class="border-b hover:bg-blue-50 transition">
-                        <td class="border p-2"><b>${esc(t.name)}</b><br><span class="text-[11px] text-gray-500">${esc(t.dept)}</span></td>
-                        <td class="border p-2 align-top">${duties}</td>
-                        <td class="border p-2 align-top">${teaching}</td>
-                        <td class="border p-2 text-center">
-                            <div class="font-bold text-lg ${colorClass}">${esc(t.total)}</div>
-                            <div class="text-[10px] text-gray-500 bg-gray-100 rounded px-1 mt-1 inline-block border">Dạy: ${esc(t.teachPeriods)} | KN: ${esc(t.dutyPeriods)}</div>
-                        </td>
-                        <td class="border p-2 text-center"><button onclick="deleteTeacher(${Number(t.id)})" class="text-red-500 bg-red-50 p-2 rounded hover:bg-red-100"><i class="fa-solid fa-trash"></i></button></td>
-                    </tr>`;
-                }).join('');
-            }
-            renderDataSummary();
-            updateFilterDropdown();
+            if (!dbTeachers.length) tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-gray-400 italic">Chưa có dữ liệu.</td></tr>`;
+            else tbody.innerHTML = dbTeachers.map(t => {
+                const colorClass = t.total > 17 ? "text-red-600" : (t.total < 17 ? "text-yellow-600" : "text-green-600");
+                const duties = (t.duties || []).map(d => `<span class="bg-yellow-100 text-xs px-2 py-1 border border-yellow-200 rounded mr-1 mb-1 inline-block">${esc(d.name)} <b class="text-blue-600">(+${esc(d.period)})</b></span>`).join('') || '<span class="text-gray-400 italic text-xs">Không có</span>';
+                const teaching = (t.teaching || []).map(tc => `<div class="mb-1 text-xs"><b>${esc(tc.sub)}</b> <i class="fa-solid fa-arrow-right text-[9px] mx-1 text-gray-400"></i> Lớp ${esc(tc.cls)} <span class="text-gray-500">(${esc(tc.prd)}t)</span></div>`).join('') || '<span class="text-gray-400 italic text-xs">Chưa có tiết dạy</span>';
+                return `<tr class="border-b hover:bg-blue-50 transition">
+                    <td class="border p-2"><b>${esc(t.name)}</b><br><span class="text-[11px] text-gray-500">${esc(t.dept)}</span></td>
+                    <td class="border p-2 align-top">${duties}</td><td class="border p-2 align-top">${teaching}</td>
+                    <td class="border p-2 text-center"><div class="font-bold text-lg ${colorClass}">${esc(t.total)}</div><div class="text-[10px] text-gray-500 bg-gray-100 rounded px-1 mt-1 inline-block border">Dạy: ${esc(t.teachPeriods)} | KN: ${esc(t.dutyPeriods)}</div></td>
+                    <td class="border p-2 text-center"><button onclick="deleteTeacher(${Number(t.id)})" class="text-red-500 bg-red-50 p-2 rounded hover:bg-red-100"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>`;
+            }).join('');
+            renderDataSummary(); updateFilterDropdown();
         }
 
         function renderDataSummary() {
-            const el = $('data-summary');
-            if (!el) return;
+            const el = $('data-summary'); if (!el) return;
             const classes = new Set(); let needed = 0;
             dbTeachers.forEach(t => (t.teaching || []).forEach(tc => { classes.add(tc.cls); needed += Number(tc.prd) || 0; }));
-            if (!needed) { el.textContent = 'Chưa có tiết dạy nào để xếp TKB.'; return; }
-            let status;
-            if (!globalSchedule.length) status = 'Chưa xếp TKB.';
-            else if (globalSchedule.length === needed) status = `Đã xếp đủ ${needed}/${needed} tiết.`;
-            else status = `TKB hiện có ${globalSchedule.length}/${needed} tiết, chưa khớp với dữ liệu. Bấm "Xếp TKB từ dữ liệu này" để cập nhật.`;
+            if (!needed) return el.textContent = 'Chưa có tiết dạy nào để xếp TKB.';
+            let status = !globalSchedule.length ? 'Chưa xếp TKB.' : (globalSchedule.length === needed ? `Đã xếp đủ ${needed}/${needed} tiết.` : `TKB hiện có ${globalSchedule.length}/${needed} tiết, chưa khớp với dữ liệu. Bấm "Xếp TKB từ dữ liệu này" để cập nhật.`);
             el.textContent = `${classes.size} lớp, ${needed} tiết/tuần cần xếp. ${status}`;
         }
 
-        // --- 3. BỘ LỌC ĐA NĂNG (LỚP HOẶC GIÁO VIÊN) ---
+        // --- 3. BỘ LỌC ĐA NĂNG ---
         function updateFilterDropdown() {
-            const viewType = $('view-type').value;
-            const sel = $('main-filter');
-            const currentSelection = sel.value;
+            const viewType = $('view-type').value, sel = $('main-filter'), currentSelection = sel.value;
             const sorted = listEntities(viewType);
-            sel.innerHTML = `<option value="">-- Chọn ${viewType === 'class' ? 'Lớp' : 'Giáo viên'} để xem --</option>` +
-                sorted.map(item => `<option value="${esc(item)}">${viewType === 'class' ? 'Lớp' : 'GV:'} ${esc(item)}</option>`).join('');
-
-            if (sorted.length > 0) {
-                if (currentSelection && sorted.includes(currentSelection)) sel.value = currentSelection;
-                else sel.selectedIndex = 1;
-            }
+            sel.innerHTML = `<option value="">-- Chọn ${viewType === 'class' ? 'Lớp' : 'Giáo viên'} để xem --</option>` + sorted.map(item => `<option value="${esc(item)}">${viewType === 'class' ? 'Lớp' : 'GV:'} ${esc(item)}</option>`).join('');
+            if (sorted.length > 0) { if (currentSelection && sorted.includes(currentSelection)) sel.value = currentSelection; else sel.selectedIndex = 1; }
             renderTimetable();
         }
 
         // --- 4. XẾP TKB TỪ DỮ LIỆU ĐÃ CÓ ---
-        // Bấm nút "Xếp TKB từ dữ liệu này" ở trang Nhập Dữ Liệu: chuyển sang Không gian TKB và chạy xếp lịch.
         function scheduleFromData() {
-            if (!buildLessons().length) {
-                return showToast("Chưa có tiết dạy nào để xếp. Hãy nhập môn / lớp / số tiết cho giáo viên trước.", "error");
-            }
-            switchView('timetable');
-            runAutoSchedule();
+            if (!buildLessons().length) return showToast("Chưa có tiết dạy nào để xếp. Hãy nhập môn / lớp / số tiết cho giáo viên trước.", "error");
+            switchView('timetable'); runAutoSchedule();
         }
 
         function buildLessons() {
             const list = [];
             dbTeachers.forEach(t => (t.teaching || []).forEach(tc => {
-                const n = parseInt(tc.prd) || 0;
-                for (let i = 0; i < n; i++) {
-                    list.push({ teacher: t.name, subject: tc.sub, cls: tc.cls, teachPeriods: t.teachPeriods || 0, type: isHdtnSubject(tc.sub) ? 'hdtn' : 'normal' });
-                }
+                for (let i = 0; i < (parseInt(tc.prd) || 0); i++) list.push({ teacher: t.name, subject: tc.sub, cls: tc.cls, teachPeriods: t.teachPeriods || 0, type: isHdtnSubject(tc.sub) ? 'hdtn' : 'normal' });
             }));
             return list;
         }
@@ -568,30 +512,20 @@
             const cap = DAYS.length * PERIODS.length;
             const cls = new Map(), tch = new Map(), warnings = [];
             lessons.forEach(l => { cls.set(l.cls, (cls.get(l.cls) || 0) + 1); tch.set(l.teacher, (tch.get(l.teacher) || 0) + 1); });
-            cls.forEach((n, c) => { if (n > cap) warnings.push(`Lớp ${c} có ${n} tiết/tuần, nhiều hơn ${cap} ô của lưới (T2-T7, 5 tiết sáng).`); });
-            tch.forEach((n, t) => { if (n > cap) warnings.push(`${t} dạy ${n} tiết/tuần, nhiều hơn ${cap} ô của lưới.`); });
+            cls.forEach((n, c) => { if (n > cap) warnings.push(`Lớp ${c} có ${n} tiết/tuần, nhiều hơn ${cap} ô.`); });
+            tch.forEach((n, t) => { if (n > cap) warnings.push(`${t} dạy ${n} tiết/tuần, nhiều hơn ${cap} ô.`); });
             return { warnings, clsCount: cls, tchCount: tch };
         }
 
-        // Một lượt xếp: tham lam có chấm điểm + sửa lỗi bằng cách dời tiết đang chắn chỗ.
         function attemptSchedule(baseLessons, opts, clsCount, tchCount) {
-            const key = (x, d, p) => `${x}|${d}|${p}`;
-            const tSlot = new Map(), cSlot = new Map();
+            const key = (x, d, p) => `${x}|${d}|${p}`, tSlot = new Map(), cSlot = new Map();
             const teacherDay = new Map(), classDay = new Map(), subjDay = new Map();
-            const bump = (m, k, n) => m.set(k, (m.get(k) || 0) + n);
-
-            const dayOff = new Map();
-            if (opts.dayOff) {
-                dbTeachers.forEach(t => {
-                    if ((t.teaching || []).length && (t.teachPeriods || 0) <= 25) dayOff.set(t.name, DAYS[Math.floor(Math.random() * DAYS.length)]);
-                });
-            }
+            const bump = (m, k, n) => m.set(k, (m.get(k) || 0) + n), dayOff = new Map();
+            if (opts.dayOff) dbTeachers.forEach(t => { if ((t.teaching || []).length && (t.teachPeriods || 0) <= 25) dayOff.set(t.name, DAYS[Math.floor(Math.random() * DAYS.length)]); });
 
             const lessons = baseLessons.map(l => ({ ...l, day: null, period: null }));
-
             const place = (L, d, p) => {
-                L.day = d; L.period = p;
-                tSlot.set(key(L.teacher, d, p), L); cSlot.set(key(L.cls, d, p), L);
+                L.day = d; L.period = p; tSlot.set(key(L.teacher, d, p), L); cSlot.set(key(L.cls, d, p), L);
                 bump(teacherDay, `${L.teacher}|${d}`, 1); bump(classDay, `${L.cls}|${d}`, 1); bump(subjDay, `${L.cls}|${L.subject}|${d}`, 1);
             };
             const unplace = (L) => {
@@ -599,101 +533,68 @@
                 bump(teacherDay, `${L.teacher}|${L.day}`, -1); bump(classDay, `${L.cls}|${L.day}`, -1); bump(subjDay, `${L.cls}|${L.subject}|${L.day}`, -1);
                 L.day = null; L.period = null;
             };
-            const isFree = (L, d, p, ignoreOff) =>
-                (ignoreOff || d !== dayOff.get(L.teacher)) && !tSlot.has(key(L.teacher, d, p)) && !cSlot.has(key(L.cls, d, p));
-
+            const isFree = (L, d, p, ignoreOff) => (ignoreOff || d !== dayOff.get(L.teacher)) && !tSlot.has(key(L.teacher, d, p)) && !cSlot.has(key(L.cls, d, p));
             const adjacentSame = (L, d, p) => {
                 const i = PERIODS.indexOf(p);
-                return [PERIODS[i - 1], PERIODS[i + 1]].some(q => {
-                    if (!q) return false;
-                    const o = cSlot.get(key(L.cls, d, q));
-                    return o && o.subject === L.subject;
-                });
+                return [PERIODS[i - 1], PERIODS[i + 1]].some(q => q && cSlot.get(key(L.cls, d, q))?.subject === L.subject);
             };
             const scoreSlot = (L, d, p) => {
-                const idx = PERIODS.indexOf(p);
-                let holes = 0;
-                for (let i = 0; i < idx; i++) if (!cSlot.has(key(L.cls, d, PERIODS[i]))) holes++;   // tránh tiết trống giữa buổi
-                let sc = Math.random() * 2;
-                sc += 3 * (classDay.get(`${L.cls}|${d}`) || 0);                 // dàn đều các ngày trong tuần cho lớp
-                sc += 2 * (teacherDay.get(`${L.teacher}|${d}`) || 0);           // dàn đều các ngày cho giáo viên
-                sc += 40 * (subjDay.get(`${L.cls}|${L.subject}|${d}`) || 0);    // hạn chế 1 môn học 2 lần/ngày
-                sc += 4 * holes + 0.3 * idx;
+                const idx = PERIODS.indexOf(p); let holes = 0;
+                for (let i = 0; i < idx; i++) if (!cSlot.has(key(L.cls, d, PERIODS[i]))) holes++;
+                let sc = Math.random() * 2 + 3 * (classDay.get(`${L.cls}|${d}`) || 0) + 2 * (teacherDay.get(`${L.teacher}|${d}`) || 0) + 40 * (subjDay.get(`${L.cls}|${L.subject}|${d}`) || 0) + 4 * holes + 0.3 * idx;
                 if (opts.noConsec && adjacentSame(L, d, p)) sc += 1000;
                 return sc;
             };
 
-            // Xếp các tiết khó (GV dạy nhiều, lớp học nhiều) trước
-            const order = shuffle(lessons.slice()).sort((a, b) =>
-                (tchCount.get(b.teacher) + clsCount.get(b.cls)) - (tchCount.get(a.teacher) + clsCount.get(a.cls)));
-
+            const order = shuffle(lessons.slice()).sort((a, b) => (tchCount.get(b.teacher) + clsCount.get(b.cls)) - (tchCount.get(a.teacher) + clsCount.get(a.cls)));
             const pending = [];
             for (const L of order) {
                 let best = null, bestScore = Infinity;
                 for (const d of DAYS) for (const p of PERIODS) {
                     if (!isFree(L, d, p, false)) continue;
-                    const sc = scoreSlot(L, d, p);
-                    if (sc < bestScore) { bestScore = sc; best = [d, p]; }
+                    const sc = scoreSlot(L, d, p); if (sc < bestScore) { bestScore = sc; best = [d, p]; }
                 }
                 if (best) place(L, best[0], best[1]); else pending.push(L);
             }
 
             const allSlots = () => shuffle(DAYS.flatMap(d => PERIODS.map(p => [d, p])));
             const tryRepair = (L) => {
-                // 1) Chấp nhận xếp vào ngày nghỉ của GV nếu không còn chỗ nào khác
                 for (const [d, p] of allSlots()) if (isFree(L, d, p, true)) { place(L, d, p); return true; }
-                // 2) Dời 1 tiết đang chắn chỗ sang ô trống khác
                 for (const [d, p] of allSlots()) {
                     const tb = tSlot.get(key(L.teacher, d, p)), cb = cSlot.get(key(L.cls, d, p));
                     if (tb && cb) continue;
-                    const B = tb || cb;
-                    unplace(B);
+                    const B = tb || cb; unplace(B);
                     for (const [d2, p2] of allSlots()) {
-                        if (d2 === d && p2 === p) continue;
-                        if (isFree(B, d2, p2, false)) { place(L, d, p); place(B, d2, p2); return true; }
+                        if (d2 !== d || p2 !== p) if (isFree(B, d2, p2, false)) { place(L, d, p); place(B, d2, p2); return true; }
                     }
-                    place(B, d, p); // không dời được -> trả về chỗ cũ
+                    place(B, d, p);
                 }
                 return false;
             };
-            pending.forEach(L => tryRepair(L));
+            pending.forEach(tryRepair);
 
-            const unplaced = lessons.filter(l => l.day === null);
-            let consec = 0, spread = 0;
+            const unplaced = lessons.filter(l => l.day === null); let consec = 0, spread = 0;
             lessons.forEach(L => {
                 if (L.day === null) return;
                 const nxt = PERIODS[PERIODS.indexOf(L.period) + 1];
-                if (nxt) { const o = cSlot.get(key(L.cls, L.day, nxt)); if (o && o.subject === L.subject) consec++; }
+                if (nxt && cSlot.get(key(L.cls, L.day, nxt))?.subject === L.subject) consec++;
             });
             subjDay.forEach(v => { if (v > 1) spread += v - 1; });
-            const quality = unplaced.length * 100000 + (opts.noConsec ? consec * 1000 : 0) + spread * 10;
-            return { lessons, unplaced, consec, quality };
+            return { lessons, unplaced, consec, quality: unplaced.length * 100000 + (opts.noConsec ? consec * 1000 : 0) + spread * 10 };
         }
 
-        function setSchedulingUI(busy) {
-            $('btn-run-ai').classList.toggle('hidden', busy);
-            $('ai-progress').classList.toggle('hidden', !busy);
-            const dataBtn = $('btn-schedule-from-data');
-            if (dataBtn) dataBtn.disabled = busy;
-        }
+        function setSchedulingUI(busy) { $('btn-run-ai').classList.toggle('hidden', busy); $('ai-progress').classList.toggle('hidden', !busy); if ($('btn-schedule-from-data')) $('btn-schedule-from-data').disabled = busy; }
 
         function runAutoSchedule() {
             if (isScheduling) return;
             const lessons = buildLessons();
-            if (!lessons.length) {
-                switchView('data-entry');
-                return showToast("Cần có dữ liệu phân công (môn / lớp / số tiết) để xếp lịch!", "error");
-            }
-            if (globalSchedule.length > 0 && !confirm("TKB hiện tại (kể cả các chỉnh sửa thủ công) sẽ bị thay bằng bản xếp mới từ dữ liệu phân công. Tiếp tục?")) return;
+            if (!lessons.length) { switchView('data-entry'); return showToast("Cần có dữ liệu phân công để xếp lịch!", "error"); }
+            if (globalSchedule.length > 0 && !confirm("TKB hiện tại sẽ bị ghi đè. Tiếp tục?")) return;
 
-            setMode('auto');
-            const info = analyzeData(lessons);
-            const opts = { dayOff: $('ai-dayoff').checked, noConsec: $('ai-noconsecutive').checked };
-            const bar = $('ai-bar'), pct = $('ai-percent');
-            isScheduling = true;
-            $('schedule-report').classList.add('hidden');
-            bar.style.width = '0%'; pct.innerText = '0%';
-            setSchedulingUI(true);
+            setMode('auto'); isScheduling = true;
+            const info = analyzeData(lessons), opts = { dayOff: $('ai-dayoff').checked, noConsec: $('ai-noconsecutive').checked };
+            const bar = $('ai-bar'), pct = $('ai-percent'); $('schedule-report').classList.add('hidden');
+            bar.style.width = '0%'; pct.innerText = '0%'; setSchedulingUI(true);
 
             const MAX_ATTEMPTS = 25, LIMIT_MS = 1500, t0 = performance.now();
             let attempts = 0, best = null;
@@ -702,135 +603,82 @@
                 try {
                     const sliceStart = performance.now();
                     do {
-                        const r = attemptSchedule(lessons, opts, info.clsCount, info.tchCount);
-                        attempts++;
+                        const r = attemptSchedule(lessons, opts, info.clsCount, info.tchCount); attempts++;
                         if (!best || r.quality < best.quality) best = r;
                     } while (attempts < MAX_ATTEMPTS && performance.now() - sliceStart < 40 && best.quality >= 1);
 
-                    const elapsed = performance.now() - t0;
-                    const percent = Math.min(100, Math.round(Math.max(attempts / MAX_ATTEMPTS, elapsed / LIMIT_MS) * 100));
+                    const elapsed = performance.now() - t0, percent = Math.min(100, Math.round(Math.max(attempts / MAX_ATTEMPTS, elapsed / LIMIT_MS) * 100));
                     bar.style.width = percent + '%'; pct.innerText = percent + '%';
 
                     if (attempts < MAX_ATTEMPTS && best.quality >= 1 && elapsed < LIMIT_MS) { setTimeout(step, 0); return; }
                     finishSchedule(best, info, opts);
-                } catch (err) {
-                    console.error(err);
-                    isScheduling = false; setSchedulingUI(false);
-                    showToast("Lỗi khi xếp lịch: " + err.message, "error");
-                }
+                } catch (err) { isScheduling = false; setSchedulingUI(false); showToast("Lỗi: " + err.message, "error"); }
             };
             setTimeout(step, 50);
         }
 
         function finishSchedule(best, info, opts) {
-            globalSchedule = best.lessons.filter(l => l.day !== null).map(l => ({
-                id: newCellId(), day: l.day, period: l.period, teacher: l.teacher, subject: l.subject, cls: l.cls, type: l.type
-            }));
+            globalSchedule = best.lessons.filter(l => l.day !== null).map(l => ({ id: newCellId(), day: l.day, period: l.period, teacher: l.teacher, subject: l.subject, cls: l.cls, type: l.type }));
             saveDataToStorage();
 
             const missing = new Map();
             best.unplaced.forEach(l => { const k = `${l.teacher}|${l.subject}|${l.cls}`; missing.set(k, (missing.get(k) || 0) + 1); });
-            lastReport = {
-                placed: globalSchedule.length, total: best.lessons.length,
-                consec: opts.noConsec ? best.consec : 0,
-                warnings: info.warnings,
-                missing: Array.from(missing.entries()).map(([k, n]) => { const [t, s, c] = k.split('|'); return `${t} - ${s} - Lớp ${c}: thiếu ${n} tiết`; })
-            };
+            lastReport = { placed: globalSchedule.length, total: best.lessons.length, consec: opts.noConsec ? best.consec : 0, warnings: info.warnings, missing: Array.from(missing.entries()).map(([k, n]) => { const [t, s, c] = k.split('|'); return `${t} - ${s} - Lớp ${c}: thiếu ${n} tiết`; }) };
 
             $('ai-bar').style.width = '100%'; $('ai-percent').innerText = '100%';
             setTimeout(() => {
                 isScheduling = false; setSchedulingUI(false); $('ai-bar').style.width = '0%';
                 renderScheduleReport(); renderDataSummary(); updateFilterDropdown();
                 if (lastReport.placed === lastReport.total) showToast(`Đã xếp xong ${lastReport.placed} tiết!`, "success");
-                else showToast(`Chỉ xếp được ${lastReport.placed}/${lastReport.total} tiết. Xem báo cáo bên trái.`, "error");
+                else showToast(`Chỉ xếp được ${lastReport.placed}/${lastReport.total} tiết. Xem báo cáo.`, "error");
             }, 350);
         }
 
         function renderScheduleReport() {
-            const el = $('schedule-report');
-            if (!el) return;
-            if (!lastReport) { el.classList.add('hidden'); return; }
-            const r = lastReport;
-            const ok = r.missing.length === 0 && r.warnings.length === 0 && r.consec === 0;
+            const el = $('schedule-report'); if (!el) return;
+            if (!lastReport) return el.classList.add('hidden');
+            const r = lastReport, ok = r.missing.length === 0 && r.warnings.length === 0 && r.consec === 0;
             el.className = `mt-4 text-xs rounded-lg border p-3 leading-relaxed ${ok ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-900'}`;
             let html = `<div class="font-bold text-sm mb-1">Đã xếp ${r.placed}/${r.total} tiết</div>`;
-            if (r.consec > 0) html += `<div class="mb-1">Còn ${r.consec} cặp tiết liền nhau cùng môn (không tránh được với dữ liệu hiện tại).</div>`;
+            if (r.consec > 0) html += `<div class="mb-1">Còn ${r.consec} cặp tiết liền nhau cùng môn (không tránh được).</div>`;
             if (r.missing.length) html += `<div class="font-semibold">Chưa xếp được:</div><ul class="list-disc pl-4 mb-1">${r.missing.map(m => `<li>${esc(m)}</li>`).join('')}</ul>`;
             if (r.warnings.length) html += `<div class="font-semibold">Dữ liệu cần kiểm tra:</div><ul class="list-disc pl-4">${r.warnings.map(m => `<li>${esc(m)}</li>`).join('')}</ul>`;
             if (ok) html += `<div>Không có xung đột GV hoặc lớp.</div>`;
-            el.innerHTML = html;
+            el.innerHTML = html; el.classList.remove('hidden');
         }
 
         function clearTimetable() {
             if (confirm("Bạn có chắc muốn xóa sạch Bảng TKB hiện tại? Dữ liệu giáo viên vẫn an toàn.")) {
                 globalSchedule = []; lastReport = null; saveDataToStorage();
-                renderScheduleReport(); renderDataSummary(); renderTimetable();
-                showToast("Đã xóa trắng Lưới TKB", "success");
+                renderScheduleReport(); renderDataSummary(); renderTimetable(); showToast("Đã xóa trắng Lưới TKB", "success");
             }
         }
 
         // --- 5. HIỂN THỊ BẢNG TKB ---
         function renderTimetable() {
-            const viewType = $('view-type').value;
-            const sel = $('main-filter');
+            const viewType = $('view-type').value, sel = $('main-filter');
             if (sel.value === "" && sel.options.length > 1) sel.selectedIndex = 1;
-
             const selectedVal = sel.value;
             $('lbl-current-class').innerText = selectedVal ? (viewType === 'class' ? `Lớp ${selectedVal}` : `Giáo viên: ${selectedVal}`) : "Chưa chọn dữ liệu";
+            const tbody = $('tkb-body'), hasData = buildLessons().length > 0;
 
-            const tbody = $('tkb-body');
-            const hasData = buildLessons().length > 0;
-
-            if (!hasData) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8" class="p-16 text-center text-gray-500 bg-gray-50 h-[400px] border-b border-gray-200">
-                            <i class="fa-solid fa-user-plus text-6xl mb-4 text-blue-200"></i>
-                            <h3 class="text-2xl font-bold text-gray-700 mb-2">Chưa có dữ liệu phân công</h3>
-                            <p class="text-sm max-w-md mx-auto leading-relaxed mb-6">Nhập giáo viên, môn, lớp và số tiết trước, sau đó quay lại đây để xếp TKB.</p>
-                            <button onclick="switchView('data-entry')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition">
-                                <i class="fa-solid fa-database mr-2"></i> Đi tới Nhập Dữ Liệu
-                            </button>
-                        </td>
-                    </tr>`;
-                return;
-            }
-
-            if (globalSchedule.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8" class="p-16 text-center text-gray-500 bg-gray-50 h-[400px] border-b border-gray-200">
-                            <i class="fa-solid fa-calendar-xmark text-6xl mb-4 text-blue-200"></i>
-                            <h3 class="text-2xl font-bold text-gray-700 mb-2">Chưa có Thời Khóa Biểu</h3>
-                            <p class="text-sm max-w-md mx-auto leading-relaxed mb-6">Đã có dữ liệu phân công của ${dbTeachers.length} giáo viên. Bấm nút dưới đây để hệ thống tự xếp TKB từ dữ liệu này.</p>
-                            <button onclick="runAutoSchedule()" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-full shadow-lg transition transform hover:scale-105">
-                                <i class="fa-solid fa-wand-magic-sparkles mr-2 text-xl"></i> XẾP TKB TỪ DỮ LIỆU ĐÃ NHẬP
-                            </button>
-                        </td>
-                    </tr>`;
-                return;
-            }
+            if (!hasData) { tbody.innerHTML = `<tr><td colspan="8" class="p-16 text-center text-gray-500 bg-gray-50 h-[400px] border-b border-gray-200"><h3 class="text-2xl font-bold mb-2">Chưa có dữ liệu</h3></td></tr>`; return; }
+            if (globalSchedule.length === 0) { tbody.innerHTML = `<tr><td colspan="8" class="p-16 text-center text-gray-500 bg-gray-50 h-[400px] border-b border-gray-200"><h3 class="text-2xl font-bold mb-2">Chưa có TKB</h3><button onclick="runAutoSchedule()" class="bg-yellow-500 text-white font-bold py-2 px-6 rounded-full shadow-lg">XẾP TKB TỪ DỮ LIỆU</button></td></tr>`; return; }
 
             let html = '';
             for (let i = 1; i <= 5; i++) {
                 html += `<tr>`;
-                if (i === 1) html += `<td rowspan="5" class="w-16 min-w-[64px] border-b border-r font-bold text-gray-700 bg-white sticky-col shadow-[1px_0_0_#e5e7eb]" style="writing-mode: vertical-rl">SÁNG</td>`;
-                html += `<td class="w-16 min-w-[64px] border-b border-r bg-gray-50 sticky-col font-medium shadow-[1px_0_0_#e5e7eb]" style="left:64px;">Tiết ${i}</td>`;
-
+                if (i === 1) html += `<td rowspan="5" class="w-16 min-w-[64px] border-b border-r font-bold text-gray-700 bg-white sticky-col" style="writing-mode: vertical-rl">SÁNG</td>`;
+                html += `<td class="w-16 min-w-[64px] border-b border-r bg-gray-50 sticky-col font-medium" style="left:64px;">Tiết ${i}</td>`;
                 DAYS.forEach(day => {
                     const cellData = selectedVal ? globalSchedule.find(s => (viewType === 'class' ? s.cls === selectedVal : s.teacher === selectedVal) && s.day === day && s.period === `s${i}`) : null;
-
                     html += `<td class="border-b border-r p-1.5 align-top drop-zone min-w-[120px] h-[60px]" data-day="${day}" data-period="s${i}" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event)">`;
                     if (cellData) {
                         const bgClass = cellData.type === 'hdtn' ? 'bg-subject-hdtn' : 'bg-subject-normal';
-                        const bottomText = viewType === 'class'
-                            ? `<i class="fa-solid fa-user-tie mr-1"></i>${esc(cellData.teacher)}`
-                            : `<i class="fa-solid fa-users mr-1"></i>Lớp ${esc(cellData.cls)}`;
-                        html += `
-                            <div id="${esc(cellData.id)}" class="draggable ${bgClass} rounded p-2 text-left h-full shadow-sm hover:shadow transition border border-transparent hover:border-blue-300" draggable="true" ondragstart="drag(event)" ondragend="dragEnd(event)">
+                        const bottomText = viewType === 'class' ? `<i class="fa-solid fa-user-tie mr-1"></i>${esc(cellData.teacher)}` : `<i class="fa-solid fa-users mr-1"></i>Lớp ${esc(cellData.cls)}`;
+                        html += `<div id="${esc(cellData.id)}" class="draggable ${bgClass} rounded p-2 text-left h-full shadow-sm hover:border-blue-300" draggable="true" ondragstart="drag(event)" ondragend="dragEnd(event)">
                                 <div class="font-bold text-gray-800 text-xs truncate" title="${esc(cellData.subject)}">${esc(cellData.subject)}</div>
-                                <div class="text-[11px] text-gray-600 mt-1 truncate">${bottomText}</div>
-                            </div>`;
+                                <div class="text-[11px] text-gray-600 mt-1 truncate">${bottomText}</div></div>`;
                     }
                     html += `</td>`;
                 });
@@ -839,22 +687,15 @@
             tbody.innerHTML = html;
         }
 
-        // --- KÉO THẢ (có kiểm tra trùng lịch GV và lớp) ---
+        // --- KÉO THẢ ---
         function allowDrop(ev) { ev.preventDefault(); const z = ev.target.closest('.drop-zone'); if (z) z.classList.add('drag-over'); }
         function dragLeave(ev) { const z = ev.target.closest('.drop-zone'); if (z && !z.contains(ev.relatedTarget)) z.classList.remove('drag-over'); }
         function drag(ev) { ev.dataTransfer.setData("text", ev.currentTarget.id); ev.dataTransfer.effectAllowed = 'move'; }
         function dragEnd() { document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over')); }
-
         function drop(ev) {
-            ev.preventDefault();
-            const zone = ev.target.closest('.drop-zone');
-            if (!zone) return;
-            dragEnd();
-
-            const D = globalSchedule.find(s => s.id === ev.dataTransfer.getData("text"));
-            if (!D) return;
-            const td = zone.getAttribute('data-day'), tp = zone.getAttribute('data-period');
-            if (D.day === td && D.period === tp) return;
+            ev.preventDefault(); const zone = ev.target.closest('.drop-zone'); if (!zone) return; dragEnd();
+            const D = globalSchedule.find(s => s.id === ev.dataTransfer.getData("text")); if (!D) return;
+            const td = zone.getAttribute('data-day'), tp = zone.getAttribute('data-period'); if (D.day === td && D.period === tp) return;
 
             const viewType = $('view-type').value, sel = $('main-filter').value;
             const inView = s => viewType === 'class' ? s.cls === sel : s.teacher === sel;
@@ -862,244 +703,146 @@
 
             const ignore = new Set([D.id]); if (E) ignore.add(E.id);
             const clash = (L, d, p) => globalSchedule.find(s => !ignore.has(s.id) && s.day === d && s.period === p && (s.teacher === L.teacher || s.cls === L.cls));
-            const why = (c, L) => c.teacher === L.teacher
-                ? `GV ${L.teacher} đang dạy ${c.subject} lớp ${c.cls}`
-                : `Lớp ${L.cls} đang học ${c.subject} với ${c.teacher}`;
+            const why = (c, L) => c.teacher === L.teacher ? `GV ${L.teacher} đang dạy ${c.subject} lớp ${c.cls}` : `Lớp ${L.cls} đang học ${c.subject} với ${c.teacher}`;
 
-            let c = clash(D, td, tp);
-            if (c) return showToast(`Không thể chuyển sang ${slotLabel(td, tp)}: ${why(c, D)}.`, "error");
-            if (E) {
-                c = clash(E, D.day, D.period);
-                if (c) return showToast(`Không thể đổi chỗ với tiết ${E.subject}: ${why(c, E)} vào ${slotLabel(D.day, D.period)}.`, "error");
-            }
+            let c = clash(D, td, tp); if (c) return showToast(`Không thể chuyển: ${why(c, D)}.`, "error");
+            if (E) { c = clash(E, D.day, D.period); if (c) return showToast(`Không thể đổi: ${why(c, E)}`, "error"); }
 
-            const od = D.day, op = D.period;
-            D.day = td; D.period = tp;
-            if (E) { E.day = od; E.period = op; }
-
+            const od = D.day, op = D.period; D.day = td; D.period = tp; if (E) { E.day = od; E.period = op; }
             saveDataToStorage(); renderTimetable(); setMode('manual'); showToast("Đã đổi tiết thành công!", "success");
         }
 
         // --- 6. XUẤT FILE (DOCX / XLSX) ---
-        // File Office thực chất là gói ZIP chứa các tệp XML. Phần dưới tự dựng gói đó ngay trên trình duyệt
-        // nên không cần thư viện ngoài, dùng được cả khi mở file này ở chế độ offline.
         const DAY_NAMES = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-        const MIME_TYPES = {
-            docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        };
-        const FILL = { normal: 'E0F2FE', hdtn: 'FEF08A', head: 'DBEAFE', label: 'F3F4F6' };   // cùng màu với lưới TKB trên màn hình
-        const NS_MAIN = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
-        const NS_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
-        const NS_PKG_REL = 'http://schemas.openxmlformats.org/package/2006/relationships';
+        const MIME_TYPES = { docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
+        const FILL = { normal: 'E0F2FE', hdtn: 'FEF08A', head: 'DBEAFE', label: 'F3F4F6' };
+        const NS_MAIN = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main', NS_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships', NS_PKG_REL = 'http://schemas.openxmlformats.org/package/2006/relationships';
         const XML_HEAD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
 
-        function xmlEsc(v) {
-            return String(v ?? '')
-                .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
-                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
-
-        // Danh sách lớp / giáo viên (dùng chung cho bộ lọc và cho xuất file)
+        function xmlEsc(v) { return String(v ?? '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
         function listEntities(viewType) {
-            const collator = new Intl.Collator('vi', { numeric: true, sensitivity: 'base' });
-            const items = new Set();
+            const collator = new Intl.Collator('vi', { numeric: true, sensitivity: 'base' }), items = new Set();
             if (viewType === 'class') dbTeachers.forEach(t => (t.teaching || []).forEach(tc => items.add(tc.cls)));
             else dbTeachers.forEach(t => { if ((t.teaching || []).length > 0) items.add(t.name); });
             return Array.from(items).sort(collator.compare);
         }
-
-        function getSchoolYearText() {
-            const el = $('school-year');
-            return el ? el.textContent.trim() : '';
-        }
-
-        // Mô hình dữ liệu của 1 bảng TKB: lưới 5 tiết x 6 ngày, mỗi ô có sẵn các dòng chữ cần in
+        function getSchoolYearText() { const el = $('school-year'); return el ? el.textContent.trim() : ''; }
         function buildTimetableModel(viewType, value) {
             const mine = globalSchedule.filter(s => viewType === 'class' ? s.cls === value : s.teacher === value);
-            const grid = PERIODS.map(p => DAYS.map(d => {
-                const s = mine.find(x => x.day === d && x.period === p);
-                return s ? { lines: [s.subject, viewType === 'class' ? s.teacher : `Lớp ${s.cls}`], type: s.type } : null;
-            }));
-            let heading, info = '';
-            if (viewType === 'class') heading = `Lớp ${value}`;
-            else {
-                const t = dbTeachers.find(x => x.name === value);
-                heading = `Giáo viên: ${value}`;
-                info = [t && t.dept, `${mine.length} tiết/tuần`].filter(Boolean).join(' | ');
-            }
+            const grid = PERIODS.map(p => DAYS.map(d => { const s = mine.find(x => x.day === d && x.period === p); return s ? { lines: [s.subject, viewType === 'class' ? s.teacher : `Lớp ${s.cls}`], type: s.type } : null; }));
+            let heading = viewType === 'class' ? `Lớp ${value}` : `Giáo viên: ${value}`;
+            let info = viewType === 'class' ? '' : [dbTeachers.find(x => x.name === value)?.dept, `${mine.length} tiết/tuần`].filter(Boolean).join(' | ');
             return { viewType, value, heading, info, count: mine.length, grid };
         }
 
-        // ---- ZIP (không nén) ----
-        const CRC_TABLE = (() => {
-            const t = new Uint32Array(256);
-            for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c >>> 0; }
-            return t;
-        })();
-        function crc32(bytes) {
-            let c = 0xFFFFFFFF;
-            for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
-            return (c ^ 0xFFFFFFFF) >>> 0;
-        }
+        // ---- ZIP BUILDER ----
+        const CRC_TABLE = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c >>> 0; } return t; })();
+        function crc32(bytes) { let c = 0xFFFFFFFF; for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
         function buildZip(files, mime) {
             const enc = new TextEncoder(), parts = [], central = [];
-            const now = new Date();
-            const dosTime = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
-            const dosDate = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+            const now = new Date(), dosTime = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1), dosDate = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
             let offset = 0;
             files.forEach(f => {
                 const name = enc.encode(f.name), data = enc.encode(f.content), crc = crc32(data);
-                const lh = new DataView(new ArrayBuffer(30));
-                lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
-                lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true); lh.setUint32(14, crc, true);
-                lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true); lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+                const lh = new DataView(new ArrayBuffer(30)); lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true); lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true); lh.setUint16(26, name.length, true);
                 parts.push(new Uint8Array(lh.buffer), name, data);
-
-                const ch = new DataView(new ArrayBuffer(46));
-                ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
-                ch.setUint16(12, dosTime, true); ch.setUint16(14, dosDate, true); ch.setUint32(16, crc, true);
-                ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, name.length, true);
-                ch.setUint32(42, offset, true);
-                central.push(new Uint8Array(ch.buffer), name);
-                offset += 30 + name.length + data.length;
+                const ch = new DataView(new ArrayBuffer(46)); ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(12, dosTime, true); ch.setUint16(14, dosDate, true); ch.setUint32(16, crc, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, name.length, true); ch.setUint32(42, offset, true);
+                central.push(new Uint8Array(ch.buffer), name); offset += 30 + name.length + data.length;
             });
-            const cenSize = central.reduce((a, c) => a + c.length, 0);
-            const end = new DataView(new ArrayBuffer(22));
-            end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
-            end.setUint32(12, cenSize, true); end.setUint32(16, offset, true);
+            const cenSize = central.reduce((a, c) => a + c.length, 0), end = new DataView(new ArrayBuffer(22));
+            end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true); end.setUint32(12, cenSize, true); end.setUint32(16, offset, true);
             return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: mime });
         }
 
         // ---- XLSX ----
         const XS = { title: 1, heading: 2, note: 3, head: 4, label: 5, normal: 6, hdtn: 7, empty: 8, listC: 9, listL: 10 };
-
         function xlsxStylesXml() {
-            const border = '<border><left style="thin"><color auto="1"/></left><right style="thin"><color auto="1"/></right><top style="thin"><color auto="1"/></top><bottom style="thin"><color auto="1"/></bottom><diagonal/></border>';
-            const font = (extra, sz) => `<font>${extra}<sz val="${sz}"/><name val="Times New Roman"/><family val="1"/></font>`;
-            const fill = rgb => `<fill><patternFill patternType="solid"><fgColor rgb="FF${rgb}"/><bgColor indexed="64"/></patternFill></fill>`;
-            const xf = (fontId, fillId, borderId, h, wrap) =>
-                `<xf numFmtId="0" fontId="${fontId}" fillId="${fillId}" borderId="${borderId}" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="${h}" vertical="center"${wrap ? ' wrapText="1"' : ''}/></xf>`;
-            return XML_HEAD + `<styleSheet xmlns="${NS_MAIN}">` +
-                `<fonts count="5">${font('', 11)}${font('<b/>', 11)}${font('<b/>', 18)}${font('<b/>', 13)}${font('<i/>', 11)}</fonts>` +
-                `<fills count="6"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>${fill(FILL.head)}${fill(FILL.label)}${fill(FILL.normal)}${fill(FILL.hdtn)}</fills>` +
-                `<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>${border}</borders>` +
-                `<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>` +
-                `<cellXfs count="11">` +
-                `<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>` +
-                xf(2, 0, 0, 'center', false) +   // 1 title
-                xf(3, 0, 0, 'center', false) +   // 2 heading
-                xf(4, 0, 0, 'center', false) +   // 3 note
-                xf(1, 2, 1, 'center', true) +    // 4 head
-                xf(1, 3, 1, 'center', true) +    // 5 label
-                xf(0, 4, 1, 'center', true) +    // 6 normal
-                xf(0, 5, 1, 'center', true) +    // 7 hdtn
-                xf(0, 0, 1, 'center', true) +    // 8 empty
-                xf(0, 0, 1, 'center', false) +   // 9 listC
-                xf(0, 0, 1, 'left', true) +      // 10 listL
-                `</cellXfs>` +
-                `<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>` +
-                `</styleSheet>`;
+            const font = (extra, sz) => `<font>${extra}<sz val="${sz}"/><name val="Times New Roman"/><family val="1"/></font>`, fill = rgb => `<fill><patternFill patternType="solid"><fgColor rgb="FF${rgb}"/><bgColor indexed="64"/></patternFill></fill>`;
+            const xf = (fontId, fillId, borderId, h, wrap) => `<xf numFmtId="0" fontId="${fontId}" fillId="${fillId}" borderId="${borderId}" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="${h}" vertical="center"${wrap ? ' wrapText="1"' : ''}/></xf>`;
+            return XML_HEAD + `<styleSheet xmlns="${NS_MAIN}"><fonts count="5">${font('', 11)}${font('<b/>', 11)}${font('<b/>', 18)}${font('<b/>', 13)}${font('<i/>', 11)}</fonts><fills count="6"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>${fill(FILL.head)}${fill(FILL.label)}${fill(FILL.normal)}${fill(FILL.hdtn)}</fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color auto="1"/></left><right style="thin"><color auto="1"/></right><top style="thin"><color auto="1"/></top><bottom style="thin"><color auto="1"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="11"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>${xf(2,0,0,'center',false)}${xf(3,0,0,'center',false)}${xf(4,0,0,'center',false)}${xf(1,2,1,'center',true)}${xf(1,3,1,'center',true)}${xf(0,4,1,'center',true)}${xf(0,5,1,'center',true)}${xf(0,0,1,'center',true)}${xf(0,0,1,'center',false)}${xf(0,0,1,'left',true)}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
         }
-
         const xStr = (ref, style, text) => `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(text)}</t></is></c>`;
         const xNum = (ref, style, n) => `<c r="${ref}" s="${style}"><v>${n}</v></c>`;
         const xBlank = (ref, style) => `<c r="${ref}" s="${style}"/>`;
 
-        function xlsxSheetXml({ selected, cols, rows, merges, dimension, freezeTopRow, landscapeFit }) {
+        function xlsxSheetXml({ selected, cols, rows, merges, dimension, freezeRow, landscapeFit }) {
             const colXml = cols.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('');
-            const pane = freezeTopRow ? '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft"/>' : '';
-            return XML_HEAD + `<worksheet xmlns="${NS_MAIN}">` +
-                (landscapeFit ? '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>' : '') +
-                `<dimension ref="${dimension}"/>` +
-                `<sheetViews><sheetView${selected ? ' tabSelected="1"' : ''} showGridLines="0" workbookViewId="0">${pane}</sheetView></sheetViews>` +
-                `<sheetFormatPr defaultRowHeight="15"/>` +
-                `<cols>${colXml}</cols>` +
-                `<sheetData>${rows.join('')}</sheetData>` +
-                (merges.length ? `<mergeCells count="${merges.length}">${merges.map(m => `<mergeCell ref="${m}"/>`).join('')}</mergeCells>` : '') +
-                (landscapeFit ? '<printOptions horizontalCentered="1"/>' : '') +
-                `<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/>` +
-                (landscapeFit ? '<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="1"/>' : '') +
-                `</worksheet>`;
+            const pane = freezeRow ? `<pane ySplit="${freezeRow}" topLeftCell="A${freezeRow+1}" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft"/>` : '';
+            return XML_HEAD + `<worksheet xmlns="${NS_MAIN}">${landscapeFit ? '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>' : ''}<dimension ref="${dimension}"/><sheetViews><sheetView${selected ? ' tabSelected="1"' : ''} showGridLines="0" workbookViewId="0">${pane}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${colXml}</cols><sheetData>${rows.join('')}</sheetData>${merges.length ? `<mergeCells count="${merges.length}">${merges.map(m => `<mergeCell ref="${m}"/>`).join('')}</mergeCells>` : ''}${landscapeFit ? '<printOptions horizontalCentered="1"/>' : ''}<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/>${landscapeFit ? '<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="1"/>' : ''}</worksheet>`;
         }
 
         function timetableSheetXml(m, year, selected) {
-            const L = 'ABCDEFGH';
-            const rows = [];
-            rows.push(`<row r="1" ht="30" customHeight="1">${xStr('A1', XS.title, 'THỜI KHÓA BIỂU')}</row>`);
-            rows.push(`<row r="2" ht="22" customHeight="1">${xStr('A2', XS.heading, m.heading)}</row>`);
-            rows.push(`<row r="3" ht="18" customHeight="1">${xStr('A3', XS.note, [year, m.info].filter(Boolean).join(' | '))}</row>`);
-            let head = xStr('A4', XS.head, 'Buổi') + xStr('B4', XS.head, 'Tiết');
-            DAY_NAMES.forEach((n, i) => { head += xStr(`${L[i + 2]}4`, XS.head, n); });
+            const L = 'ABCDEFGH', rows = [];
+            rows.push(`<row r="1" ht="30" customHeight="1">${xStr('A1', XS.title, 'THỜI KHÓA BIỂU')}</row>`, `<row r="2" ht="22" customHeight="1">${xStr('A2', XS.heading, m.heading)}</row>`, `<row r="3" ht="18" customHeight="1">${xStr('A3', XS.note, [year, m.info].filter(Boolean).join(' | '))}</row>`);
+            let head = xStr('A4', XS.head, 'Buổi') + xStr('B4', XS.head, 'Tiết'); DAY_NAMES.forEach((n, i) => head += xStr(`${L[i + 2]}4`, XS.head, n));
             rows.push(`<row r="4" ht="24" customHeight="1">${head}</row>`);
             m.grid.forEach((line, i) => {
-                const r = 5 + i;
-                let cells = i === 0 ? xStr(`A${r}`, XS.label, 'SÁNG') : xBlank(`A${r}`, XS.label);
+                const r = 5 + i; let cells = i === 0 ? xStr(`A${r}`, XS.label, 'SÁNG') : xBlank(`A${r}`, XS.label);
                 cells += xStr(`B${r}`, XS.label, `Tiết ${i + 1}`);
-                line.forEach((c, j) => {
-                    const ref = `${L[j + 2]}${r}`;
-                    cells += c ? xStr(ref, c.type === 'hdtn' ? XS.hdtn : XS.normal, c.lines.join('\n')) : xBlank(ref, XS.empty);
-                });
+                line.forEach((c, j) => { const ref = `${L[j + 2]}${r}`; cells += c ? xStr(ref, c.type === 'hdtn' ? XS.hdtn : XS.normal, c.lines.join('\n')) : xBlank(ref, XS.empty); });
                 rows.push(`<row r="${r}" ht="54" customHeight="1">${cells}</row>`);
             });
-            return xlsxSheetXml({
-                selected, cols: [8, 8, 22, 22, 22, 22, 22, 22], rows,
-                merges: ['A1:H1', 'A2:H2', 'A3:H3', 'A5:A9'], dimension: 'A1:H9', landscapeFit: true
-            });
+            return xlsxSheetXml({ selected, cols: [8, 8, 22, 22, 22, 22, 22, 22], rows, merges: ['A1:H1', 'A2:H2', 'A3:H3', 'A5:A9'], dimension: 'A1:H9', landscapeFit: true, freezeRow: 4 });
         }
 
-        // Trang tính liệt kê từng tiết (Lớp - Thứ - Tiết - Môn - GV) để lọc / sắp xếp trong Excel
+        // TÍNH NĂNG MỚI: TKB MASTER CHO EXCEL
+        function masterTeachersSheetXml(year, selected) {
+            const teachers = listEntities('teacher');
+            const rows = [];
+            rows.push(`<row r="1" ht="30" customHeight="1">${xStr('A1', XS.title, 'THỜI KHÓA BIỂU TỔNG HỢP GIÁO VIÊN')}</row>`);
+            rows.push(`<row r="2" ht="22" customHeight="1">${xStr('A2', XS.heading, year)}</row>`);
+            
+            let dayHead = xStr('A3', XS.head, 'Giáo viên'), periodHead = xStr('A4', XS.head, 'Tiết');
+            const merges = ['A1:AE1', 'A2:AE2', 'A3:A4'];
+            
+            DAYS.forEach((d, i) => {
+                const startCol = 1 + i * 5;
+                merges.push(`${getColName(startCol)}3:${getColName(startCol + 4)}3`);
+                dayHead += xStr(`${getColName(startCol)}3`, XS.head, DAY_NAMES[i]);
+                PERIODS.forEach((p, j) => { periodHead += xStr(`${getColName(startCol + j)}4`, XS.head, j + 1); });
+            });
+            rows.push(`<row r="3" ht="24" customHeight="1">${dayHead}</row>`, `<row r="4" ht="24" customHeight="1">${periodHead}</row>`);
+            
+            teachers.forEach((tName, i) => {
+                const r = 5 + i; let cells = xStr(`A${r}`, XS.label, tName);
+                DAYS.forEach((d, dIdx) => {
+                    PERIODS.forEach((p, pIdx) => {
+                        const colIdx = 1 + dIdx * 5 + pIdx, s = globalSchedule.find(x => x.teacher === tName && x.day === d && x.period === p);
+                        cells += s ? xStr(`${getColName(colIdx)}${r}`, s.type==='hdtn'?XS.hdtn:XS.normal, s.cls) : xBlank(`${getColName(colIdx)}${r}`, XS.empty);
+                    });
+                });
+                rows.push(`<row r="${r}" ht="20" customHeight="1">${cells}</row>`);
+            });
+            return xlsxSheetXml({ selected, cols: [25, ...Array(30).fill(5)], rows, merges, dimension: `A1:AE${4 + teachers.length}`, landscapeFit: true, freezeRow: 4 });
+        }
+
         function lessonListSheetXml(selected) {
-            const collator = new Intl.Collator('vi', { numeric: true, sensitivity: 'base' });
-            const deptOf = new Map(dbTeachers.map(t => [t.name, t.dept]));
-            const list = globalSchedule.slice().sort((a, b) =>
-                collator.compare(a.cls, b.cls) || DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || PERIODS.indexOf(a.period) - PERIODS.indexOf(b.period));
-            const heads = ['STT', 'Lớp', 'Thứ', 'Tiết', 'Môn học', 'Giáo viên', 'Tổ chuyên môn'];
-            const L = 'ABCDEFG';
-            const rows = [`<row r="1" ht="24" customHeight="1">${heads.map((h, i) => xStr(`${L[i]}1`, XS.head, h)).join('')}</row>`];
-            list.forEach((s, i) => {
-                const r = i + 2;
-                rows.push(`<row r="${r}">` +
-                    xNum(`A${r}`, XS.listC, i + 1) + xStr(`B${r}`, XS.listC, s.cls) + xStr(`C${r}`, XS.listC, DAY_NAMES[DAYS.indexOf(s.day)]) +
-                    xNum(`D${r}`, XS.listC, PERIODS.indexOf(s.period) + 1) + xStr(`E${r}`, XS.listL, s.subject) +
-                    xStr(`F${r}`, XS.listL, s.teacher) + xStr(`G${r}`, XS.listL, deptOf.get(s.teacher) || '') + `</row>`);
-            });
-            return xlsxSheetXml({
-                selected, cols: [7, 11, 10, 8, 24, 28, 26], rows, merges: [],
-                dimension: `A1:G${list.length + 1}`, freezeTopRow: true, landscapeFit: false
-            });
+            const list = globalSchedule.slice().sort((a, b) => new Intl.Collator('vi', { numeric: true }).compare(a.cls, b.cls) || DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || PERIODS.indexOf(a.period) - PERIODS.indexOf(b.period));
+            const L = 'ABCDEFG', deptOf = new Map(dbTeachers.map(t => [t.name, t.dept]));
+            const rows = [`<row r="1" ht="24" customHeight="1">${['STT', 'Lớp', 'Thứ', 'Tiết', 'Môn học', 'Giáo viên', 'Tổ chuyên môn'].map((h, i) => xStr(`${L[i]}1`, XS.head, h)).join('')}</row>`];
+            list.forEach((s, i) => { const r = i + 2; rows.push(`<row r="${r}">${xNum(`A${r}`, XS.listC, i + 1)}${xStr(`B${r}`, XS.listC, s.cls)}${xStr(`C${r}`, XS.listC, DAY_NAMES[DAYS.indexOf(s.day)])}${xNum(`D${r}`, XS.listC, PERIODS.indexOf(s.period) + 1)}${xStr(`E${r}`, XS.listL, s.subject)}${xStr(`F${r}`, XS.listL, s.teacher)}${xStr(`G${r}`, XS.listL, deptOf.get(s.teacher) || '')}</row>`); });
+            return xlsxSheetXml({ selected, cols: [7, 11, 10, 8, 24, 28, 26], rows, merges: [], dimension: `A1:G${list.length + 1}`, freezeRow: 1, landscapeFit: false });
         }
 
         function uniqueSheetName(raw, used) {
-            const base = String(raw || 'Sheet').replace(/[\[\]:*?\/\\]/g, '-').replace(/^'+|'+$/g, '').trim().slice(0, 31) || 'Sheet';
-            let name = base, i = 2;
+            let base = String(raw || 'Sheet').replace(/[\[\]:*?\/\\]/g, '-').replace(/^'+|'+$/g, '').trim().slice(0, 31) || 'Sheet', name = base, i = 2;
             while (used.has(name.toLowerCase())) { const suf = ` (${i++})`; name = base.slice(0, 31 - suf.length) + suf; }
-            used.add(name.toLowerCase());
-            return name;
+            used.add(name.toLowerCase()); return name;
         }
 
-        function buildXlsx(models, opts) {
+        function buildXlsx(models, opts = {}) {
             const year = getSchoolYearText(), used = new Set(), sheets = [];
-            models.forEach(m => {
-                const name = uniqueSheetName(m.viewType === 'class' ? `Lớp ${m.value}` : m.value, used);
-                sheets.push({ name, xml: timetableSheetXml(m, year, sheets.length === 0) });
-            });
-            if (opts.listSheet) sheets.push({ name: uniqueSheetName('Danh sách tiết', used), xml: lessonListSheetXml(sheets.length === 0) });
-
-            const n = sheets.length;
+            if (opts.isMaster) {
+                sheets.push({ name: 'TKB_Tong_Hop', xml: masterTeachersSheetXml(year, true) });
+            } else {
+                models.forEach(m => sheets.push({ name: uniqueSheetName(m.viewType === 'class' ? `Lớp ${m.value}` : m.value, used), xml: timetableSheetXml(m, year, sheets.length === 0) }));
+                if (opts.listSheet) sheets.push({ name: uniqueSheetName('Danh sách tiết', used), xml: lessonListSheetXml(sheets.length === 0) });
+            }
             const files = [
-                { name: '[Content_Types].xml', content: XML_HEAD + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
-                    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
-                    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
-                    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
-                    sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('') +
-                    '</Types>' },
+                { name: '[Content_Types].xml', content: XML_HEAD + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' + sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('') + '</Types>' },
                 { name: '_rels/.rels', content: XML_HEAD + `<Relationships xmlns="${NS_PKG_REL}"><Relationship Id="rId1" Type="${NS_REL}/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
-                { name: 'xl/workbook.xml', content: XML_HEAD + `<workbook xmlns="${NS_MAIN}" xmlns:r="${NS_REL}"><bookViews><workbookView/></bookViews><sheets>` +
-                    sheets.map((s, i) => `<sheet name="${xmlEsc(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('') + '</sheets></workbook>' },
-                { name: 'xl/_rels/workbook.xml.rels', content: XML_HEAD + `<Relationships xmlns="${NS_PKG_REL}">` +
-                    sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="${NS_REL}/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('') +
-                    `<Relationship Id="rId${n + 1}" Type="${NS_REL}/styles" Target="styles.xml"/></Relationships>` },
+                { name: 'xl/workbook.xml', content: XML_HEAD + `<workbook xmlns="${NS_MAIN}" xmlns:r="${NS_REL}"><bookViews><workbookView/></bookViews><sheets>` + sheets.map((s, i) => `<sheet name="${xmlEsc(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('') + '</sheets></workbook>' },
+                { name: 'xl/_rels/workbook.xml.rels', content: XML_HEAD + `<Relationships xmlns="${NS_PKG_REL}">` + sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="${NS_REL}/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('') + `<Relationship Id="rId${sheets.length + 1}" Type="${NS_REL}/styles" Target="styles.xml"/></Relationships>` },
                 { name: 'xl/styles.xml', content: xlsxStylesXml() },
                 ...sheets.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, content: s.xml }))
             ];
@@ -1107,140 +850,137 @@
         }
 
         // ---- DOCX ----
+        const DOCX_TC = (w, fill, inner, vMerge, hMerge) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${vMerge ? `<w:vMerge${vMerge === 'restart' ? ' w:val="restart"' : ''}/>` : ''}${hMerge ? `<w:gridSpan w:val="${hMerge}"/>` : ''}<w:shd w:val="clear" w:color="auto" w:fill="${fill || 'FFFFFF'}"/><w:vAlign w:val="center"/></w:tcPr>${inner || '<w:p/>'}</w:tc>`;
+        const DOCX_R = (t, b, sz) => `<w:r><w:rPr>${b ? '<w:b/>' : ''}<w:sz w:val="${sz}"/></w:rPr><w:t xml:space="preserve">${xmlEsc(t)}</w:t></w:r>`;
+
         function docxTable(m) {
-            const widths = [800, 800, 2256, 2256, 2256, 2256, 2256, 2256];     // tổng 15136 = bề rộng vùng in của A4 ngang
-            const total = widths.reduce((a, b) => a + b, 0);
-            const bd = ['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map(s => `<w:${s} w:val="single" w:sz="4" w:space="0" w:color="000000"/>`).join('');
-            const run = (text, bold, sz) => `<w:r><w:rPr>${bold ? '<w:b/>' : ''}<w:sz w:val="${sz}"/></w:rPr><w:t xml:space="preserve">${xmlEsc(text)}</w:t></w:r>`;
-            const para = (runs) => `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${runs}</w:p>`;
-            const tc = (w, fill, inner, vMerge) =>
-                `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${vMerge ? `<w:vMerge${vMerge === 'restart' ? ' w:val="restart"' : ''}/>` : ''}` +
-                `<w:shd w:val="clear" w:color="auto" w:fill="${fill || 'FFFFFF'}"/><w:vAlign w:val="center"/></w:tcPr>${inner || '<w:p/>'}</w:tc>`;
-
-            let xml = `<w:tbl><w:tblPr><w:tblW w:w="${total}" w:type="dxa"/><w:jc w:val="center"/><w:tblBorders>${bd}</w:tblBorders><w:tblLayout w:type="fixed"/>` +
-                `<w:tblCellMar><w:top w:w="40" w:type="dxa"/><w:left w:w="80" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr>` +
-                `<w:tblGrid>${widths.map(w => `<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>`;
-
-            const headTexts = ['Buổi', 'Tiết', ...DAY_NAMES];
-            xml += `<w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="520" w:hRule="atLeast"/><w:tblHeader/></w:trPr>` +
-                headTexts.map((t, i) => tc(widths[i], FILL.head, para(run(t, true, 22)))).join('') + `</w:tr>`;
-
+            const widths = [800, 800, 2256, 2256, 2256, 2256, 2256, 2256];
+            const total = widths.reduce((a, b) => a + b, 0), bd = ['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map(s => `<w:${s} w:val="single" w:sz="4" w:space="0" w:color="000000"/>`).join('');
+            let xml = `<w:tbl><w:tblPr><w:tblW w:w="${total}" w:type="dxa"/><w:jc w:val="center"/><w:tblBorders>${bd}</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="40" w:type="dxa"/><w:left w:w="80" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${widths.map(w => `<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>`;
+            xml += `<w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="520" w:hRule="atLeast"/><w:tblHeader/></w:trPr>` + ['Buổi', 'Tiết', ...DAY_NAMES].map((t, i) => DOCX_TC(widths[i], FILL.head, `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${DOCX_R(t, true, 22)}</w:p>`)).join('') + `</w:tr>`;
             m.grid.forEach((line, i) => {
-                xml += `<w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="960" w:hRule="atLeast"/></w:trPr>`;
-                xml += i === 0 ? tc(widths[0], FILL.label, para(run('SÁNG', true, 22)), 'restart') : tc(widths[0], FILL.label, '', 'continue');
-                xml += tc(widths[1], FILL.label, para(run(`Tiết ${i + 1}`, true, 22)));
-                line.forEach((c, j) => {
-                    if (!c) { xml += tc(widths[j + 2], null, ''); return; }
-                    const inner = para(run(c.lines[0], true, 21)) + para(run(c.lines[1], false, 20));
-                    xml += tc(widths[j + 2], c.type === 'hdtn' ? FILL.hdtn : FILL.normal, inner);
-                });
+                xml += `<w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="960" w:hRule="atLeast"/></w:trPr>` + (i === 0 ? DOCX_TC(widths[0], FILL.label, `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${DOCX_R('SÁNG', true, 22)}</w:p>`, 'restart') : DOCX_TC(widths[0], FILL.label, '', 'continue')) + DOCX_TC(widths[1], FILL.label, `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${DOCX_R(`Tiết ${i + 1}`, true, 22)}</w:p>`);
+                line.forEach((c, j) => { xml += !c ? DOCX_TC(widths[j + 2], null, '') : DOCX_TC(widths[j + 2], c.type === 'hdtn' ? FILL.hdtn : FILL.normal, `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${DOCX_R(c.lines[0], true, 21)}</w:p><w:p><w:pPr><w:jc w:val="center"/></w:pPr>${DOCX_R(c.lines[1], false, 20)}</w:p>`); });
                 xml += `</w:tr>`;
-            });
-            return xml + `</w:tbl>`;
+            }); return xml + `</w:tbl>`;
         }
 
-        function buildDocx(models) {
-            const year = getSchoolYearText();
-            const d = new Date(), pad = n => String(n).padStart(2, '0');
-            const today = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+        // TÍNH NĂNG MỚI: TKB MASTER CHO WORD
+        function docxMasterTable() {
+            const teachers = listEntities('teacher'), colNameW = 2000, colSlotW = 430;
+            const widths = [colNameW, ...Array(30).fill(colSlotW)], total = widths.reduce((a, b) => a + b, 0);
+            const bd = ['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map(s => `<w:${s} w:val="single" w:sz="4" w:space="0" w:color="000000"/>`).join('');
+            
+            let xml = `<w:tbl><w:tblPr><w:tblW w:w="${total}" w:type="dxa"/><w:jc w:val="center"/><w:tblBorders>${bd}</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="20" w:type="dxa"/><w:left w:w="40" w:type="dxa"/><w:bottom w:w="20" w:type="dxa"/><w:right w:w="40" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${widths.map(w => `<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>`;
+            
+            xml += `<w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="400" w:hRule="atLeast"/><w:tblHeader/></w:trPr>`;
+            xml += DOCX_TC(widths[0], FILL.head, `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${DOCX_R('Giáo viên', true, 18)}</w:p>`, 'restart', null);
+            DAYS.forEach((d, i) => xml += DOCX_TC(colSlotW * 5, FILL.head, `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${DOCX_R(DAY_NAMES[i], true, 18)}</w:p>`, null, 5));
+            xml += `</w:tr><w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="300" w:hRule="atLeast"/><w:tblHeader/></w:trPr>`;
+            xml += DOCX_TC(widths[0], FILL.head, '', 'continue', null);
+            DAYS.forEach(() => PERIODS.forEach((p, j) => xml += DOCX_TC(colSlotW, FILL.head, `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${DOCX_R(j+1, true, 16)}</w:p>`)));
+            xml += `</w:tr>`;
+            
+            teachers.forEach(tName => {
+                xml += `<w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="400" w:hRule="atLeast"/></w:trPr>`;
+                xml += DOCX_TC(widths[0], FILL.label, `<w:p><w:pPr><w:jc w:val="left"/></w:pPr>${DOCX_R(tName, true, 15)}</w:p>`);
+                DAYS.forEach(d => {
+                    PERIODS.forEach(p => {
+                        const s = globalSchedule.find(x => x.teacher === tName && x.day === d && x.period === p);
+                        xml += s ? DOCX_TC(colSlotW, s.type==='hdtn'?FILL.hdtn:FILL.normal, `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${DOCX_R(s.cls, true, 15)}</w:p>`) : DOCX_TC(colSlotW, FILL.normal, '');
+                    });
+                });
+                xml += `</w:tr>`;
+            }); return xml + `</w:tbl>`;
+        }
+
+        function buildDocx(models, opts = {}) {
+            const year = getSchoolYearText(), d = new Date(), pad = n => String(n).padStart(2, '0');
             const p = (jc, runs, pre, spacing) => `<w:p><w:pPr>${pre ? '<w:pageBreakBefore/>' : ''}${spacing || ''}<w:jc w:val="${jc}"/></w:pPr>${runs}</w:p>`;
-            const r = (text, sz, b, i) => `<w:r><w:rPr>${b ? '<w:b/>' : ''}${i ? '<w:i/>' : ''}<w:sz w:val="${sz}"/></w:rPr><w:t xml:space="preserve">${xmlEsc(text)}</w:t></w:r>`;
-
             let body = '';
-            models.forEach((m, idx) => {
-                body += p('center', r('THỜI KHÓA BIỂU', 34, true), idx > 0);
-                body += p('center', r(m.heading, 28, true), false, '<w:spacing w:before="60"/>');
-                const sub = [year, m.info].filter(Boolean).join(' | ');
-                if (sub) body += p('center', r(sub, 22, false, true), false, '<w:spacing w:before="40"/>');
-                body += `<w:p><w:pPr><w:spacing w:after="120"/></w:pPr></w:p>`;
-                body += docxTable(m);
-                body += p('right', r(`Xuất từ TKB PRO ngày ${today}`, 18, false, true), false, '<w:spacing w:before="120"/>');
-            });
-
-            const W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+            
+            if (opts.isMaster) {
+                body += p('center', DOCX_R('THỜI KHÓA BIỂU TỔNG HỢP GIÁO VIÊN', false, true, 34), false);
+                body += p('center', DOCX_R(year, false, false, 22), false, '<w:spacing w:before="40"/>');
+                body += `<w:p><w:pPr><w:spacing w:after="120"/></w:pPr></w:p>` + docxMasterTable();
+                body += p('right', DOCX_R(`Xuất từ TKB PRO ngày ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`, false, false, 18), false, '<w:spacing w:before="120"/>');
+            } else {
+                models.forEach((m, idx) => {
+                    body += p('center', DOCX_R('THỜI KHÓA BIỂU', false, true, 34), idx > 0);
+                    body += p('center', DOCX_R(m.heading, false, true, 28), false, '<w:spacing w:before="60"/>');
+                    const sub = [year, m.info].filter(Boolean).join(' | ');
+                    if (sub) body += p('center', DOCX_R(sub, false, false, 22), false, '<w:spacing w:before="40"/>');
+                    body += `<w:p><w:pPr><w:spacing w:after="120"/></w:pPr></w:p>` + docxTable(m);
+                    body += p('right', DOCX_R(`Xuất từ TKB PRO ngày ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`, false, false, 18), false, '<w:spacing w:before="120"/>');
+                });
+            }
+            
             const files = [
-                { name: '[Content_Types].xml', content: XML_HEAD + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
-                    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
-                    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
-                    '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>' },
+                { name: '[Content_Types].xml', content: XML_HEAD + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>' },
                 { name: '_rels/.rels', content: XML_HEAD + `<Relationships xmlns="${NS_PKG_REL}"><Relationship Id="rId1" Type="${NS_REL}/officeDocument" Target="word/document.xml"/></Relationships>` },
                 { name: 'word/_rels/document.xml.rels', content: XML_HEAD + `<Relationships xmlns="${NS_PKG_REL}"><Relationship Id="rId1" Type="${NS_REL}/styles" Target="styles.xml"/></Relationships>` },
-                { name: 'word/styles.xml', content: XML_HEAD + `<w:styles ${W}><w:docDefaults><w:rPrDefault><w:rPr>` +
-                    '<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:lang w:val="vi-VN" w:eastAsia="vi-VN" w:bidi="ar-SA"/>' +
-                    '</w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>' +
-                    '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>' +
-                    '<w:style w:type="table" w:default="1" w:styleId="TableNormal"><w:name w:val="Normal Table"/><w:uiPriority w:val="99"/><w:semiHidden/><w:unhideWhenUsed/>' +
-                    '<w:tblPr><w:tblInd w:w="0" w:type="dxa"/><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="108" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="108" w:type="dxa"/></w:tblCellMar></w:tblPr></w:style>' +
-                    '</w:styles>' },
-                { name: 'word/document.xml', content: XML_HEAD + `<w:document ${W} xmlns:r="${NS_REL}"><w:body>${body}` +
-                    '<w:sectPr><w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/><w:pgMar w:top="850" w:right="850" w:bottom="850" w:left="850" w:header="450" w:footer="450" w:gutter="0"/></w:sectPr></w:body></w:document>' }
+                { name: 'word/styles.xml', content: XML_HEAD + `<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:lang w:val="vi-VN"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style></w:styles>` },
+                { name: 'word/document.xml', content: XML_HEAD + `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}<w:sectPr><w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/><w:pgMar w:top="850" w:right="850" w:bottom="850" w:left="850" w:header="450" w:footer="450" w:gutter="0"/></w:sectPr></w:body></w:document>` }
             ];
             return buildZip(files, MIME_TYPES.docx);
         }
 
-        // ---- Hộp thoại + tải về ----
+        // ---- Hộp thoại + Tải về ----
         function downloadBlob(blob, filename) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = filename;
-            document.body.appendChild(a); a.click(); a.remove();
+            const url = URL.createObjectURL(blob), a = document.createElement('a');
+            a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
             setTimeout(() => URL.revokeObjectURL(url), 4000);
         }
 
         function exportFileName(scope, viewType, value, ext) {
+            if (scope === 'master_teachers') return `TKB_Tong_Hop_GV.${ext}`;
             const safe = s => String(s).replace(/[\\/:*?"<>|]+/g, '-').trim().replace(/\s+/g, '_');
-            const part = scope === 'classes' ? 'Tat_ca_lop' : scope === 'teachers' ? 'Tat_ca_GV' : (viewType === 'class' ? `Lop_${safe(value)}` : `GV_${safe(value)}`);
-            return `TKB_${part}.${ext}`;
+            return scope === 'classes' ? `TKB_Tat_ca_lop.${ext}` : (scope === 'teachers' ? `TKB_Tat_ca_GV.${ext}` : `TKB_${viewType === 'class' ? 'Lop' : 'GV'}_${safe(value)}.${ext}`);
         }
 
         function openExportModal() {
             if (!globalSchedule.length) return showToast("Chưa có TKB để xuất. Hãy xếp TKB trước.", "error");
-            const viewType = $('view-type').value, cur = $('main-filter').value;
-            const curRadio = document.querySelector('input[name="export-scope"][value="current"]');
-            $('export-current-label').textContent = cur ? (viewType === 'class' ? `Lớp ${cur}` : `GV ${cur}`) : 'chưa chọn lớp / giáo viên';
+            const cur = $('main-filter').value, viewType =$('view-type').value, curRadio = document.querySelector('input[name="export-scope"][value="current"]');
+            $('export-current-label').textContent = cur ? (viewType === 'class' ? `Lớp ${cur}` : `GV ${cur}`) : 'chưa chọn';
             $('export-classes-count').textContent = listEntities('class').length;
             $('export-teachers-count').textContent = listEntities('teacher').length;
             curRadio.disabled = !cur;
             (cur ? curRadio : document.querySelector('input[name="export-scope"][value="classes"]')).checked = true;
-            const modal = $('export-modal');
-            modal.classList.remove('view-hidden'); modal.classList.add('flex');
+            $('export-modal').classList.remove('view-hidden');$('export-modal').classList.add('flex');
             document.querySelector('input[name="export-format"]:checked').focus();
         }
-        function closeExportModal() {
-            const modal = $('export-modal');
-            modal.classList.add('view-hidden'); modal.classList.remove('flex');
-        }
+        function closeExportModal() { $('export-modal').classList.add('view-hidden');$('export-modal').classList.remove('flex'); }
 
         function runExport() {
-            const format = document.querySelector('input[name="export-format"]:checked').value;
-            const scope = document.querySelector('input[name="export-scope"]:checked').value;
-            const viewType = scope === 'teachers' ? 'teacher' : scope === 'classes' ? 'class' : $('view-type').value;
+            const format = document.querySelector('input[name="export-format"]:checked').value, scope = document.querySelector('input[name="export-scope"]:checked').value;
+            
+            if (scope === 'master_teachers') {
+                try {
+                    const blob = format === 'docx' ? buildDocx([], { isMaster: true }) : buildXlsx([], { isMaster: true });
+                    downloadBlob(blob, exportFileName(scope, null, null, format));
+                    closeExportModal(); return showToast(`Đã xuất TKB_Tong_Hop_GV.${format}`, "success");
+                } catch (err) { return showToast("Lỗi khi xuất file tổng: " + err.message, "error"); }
+            }
+            
+            const viewType = scope === 'teachers' ? 'teacher' : (scope === 'classes' ? 'class' : $('view-type').value);
             const values = scope === 'current' ? [$('main-filter').value].filter(Boolean) : listEntities(viewType);
             if (!values.length) return showToast("Không có lớp hoặc giáo viên nào để xuất.", "error");
             try {
                 const models = values.map(v => buildTimetableModel(viewType, v));
                 const blob = format === 'docx' ? buildDocx(models) : buildXlsx(models, { listSheet: scope !== 'current' });
-                const filename = exportFileName(scope, viewType, values[0], format);
-                downloadBlob(blob, filename);
-                closeExportModal();
-                showToast(`Đã xuất ${filename}`, "success");
-            } catch (err) {
-                console.error(err);
-                showToast("Lỗi khi xuất file: " + err.message, "error");
-            }
+                downloadBlob(blob, exportFileName(scope, viewType, values[0], format));
+                closeExportModal(); showToast(`Đã xuất file thành công`, "success");
+            } catch (err) { showToast("Lỗi khi xuất file: " + err.message, "error"); }
         }
-        document.addEventListener('keydown', e => {
-            if (e.key === 'Escape' && !$('export-modal').classList.contains('view-hidden')) closeExportModal();
-        });
 
-        // UTILS
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('export-modal').classList.contains('view-hidden')) closeExportModal(); });
+
         function showToast(msg, type = "error") {
-            const t = $('toast'); $('toast-msg').innerText = msg;
+            const t = $('toast');$('toast-msg').innerText = msg;
             t.className = `fixed bottom-4 right-4 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-300 z-[70] flex items-center gap-3 max-w-md ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
             t.querySelector('i').className = `fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation'} text-xl`;
             t.classList.remove('translate-y-20', 'opacity-0');
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => t.classList.add('translate-y-20', 'opacity-0'), type === 'success' ? 2500 : 4000);
+            clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('translate-y-20', 'opacity-0'), type === 'success' ? 2500 : 4000);
         }
 
         function mockData() {
@@ -1250,20 +990,10 @@
                 { id: 3, name: "Thầy Anh 1", dept: "Tổ Ngoại ngữ", duties: [], teaching: [{ sub: "Tiếng Anh", cls: "10A1", prd: 3 }, { sub: "Tiếng Anh", cls: "10A2", prd: 3 }], teachPeriods: 6, dutyPeriods: 0, total: 6 },
                 { id: 4, name: "Cô Lý 1", dept: "Tổ Lý - Hóa - Sinh", duties: [{ name: "Tổ phó", period: 1 }], teaching: [{ sub: "Vật lý", cls: "10A1", prd: 2 }, { sub: "Vật lý", cls: "10A2", prd: 2 }], teachPeriods: 4, dutyPeriods: 1, total: 5 }
             ];
-            globalSchedule = []; lastReport = null;   // TKB cũ không còn khớp với dữ liệu mẫu
-            saveDataToStorage(); renderScheduleReport(); renderTeachersTable();
-            showToast("Đã bốc 4 Giáo viên Test vào CSDL!", "success");
+            globalSchedule = []; lastReport = null; saveDataToStorage(); renderScheduleReport(); renderTeachersTable(); showToast("Đã bốc 4 Giáo viên Test vào CSDL!", "success");
         }
 
-        window.onload = () => {
-            loadDataFromStorage();
-            ensureSubjectDatalist();
-            renderDepartments();
-            addTeachingRow();
-            renderTeachersTable();
-            renderScheduleReport();
-            switchView('data-entry');
-        };
+        window.onload = () => { loadDataFromStorage(); ensureSubjectDatalist(); renderDepartments(); addTeachingRow(); renderTeachersTable(); renderScheduleReport(); switchView('data-entry'); };
     </script>
 </body>
 </html>
