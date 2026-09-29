@@ -849,9 +849,9 @@
             return buildZip(files, MIME_TYPES.xlsx);
         }
 
-        // ---- DOCX ----
+        // ---- DOCX (SỬA LỖI ĐỊNH DẠNG TẠI ĐÂY) ----
         const DOCX_TC = (w, fill, inner, vMerge, hMerge) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${vMerge ? `<w:vMerge${vMerge === 'restart' ? ' w:val="restart"' : ''}/>` : ''}${hMerge ? `<w:gridSpan w:val="${hMerge}"/>` : ''}<w:shd w:val="clear" w:color="auto" w:fill="${fill || 'FFFFFF'}"/><w:vAlign w:val="center"/></w:tcPr>${inner || '<w:p/>'}</w:tc>`;
-        const DOCX_R = (t, b, sz) => `<w:r><w:rPr>${b ? '<w:b/>' : ''}<w:sz w:val="${sz}"/></w:rPr><w:t xml:space="preserve">${xmlEsc(t)}</w:t></w:r>`;
+        const DOCX_R = (t, b, sz) => `<w:r><w:rPr>${b ? '<w:b/>' : ''}<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr><w:t xml:space="preserve">${xmlEsc(t)}</w:t></w:r>`;
 
         function docxTable(m) {
             const widths = [800, 800, 2256, 2256, 2256, 2256, 2256, 2256];
@@ -865,7 +865,6 @@
             }); return xml + `</w:tbl>`;
         }
 
-        // TÍNH NĂNG MỚI: TKB MASTER CHO WORD
         function docxMasterTable() {
             const teachers = listEntities('teacher'), colNameW = 2000, colSlotW = 430;
             const widths = [colNameW, ...Array(30).fill(colSlotW)], total = widths.reduce((a, b) => a + b, 0);
@@ -900,18 +899,18 @@
             let body = '';
             
             if (opts.isMaster) {
-                body += p('center', DOCX_R('THỜI KHÓA BIỂU TỔNG HỢP GIÁO VIÊN', false, true, 34), false);
-                body += p('center', DOCX_R(year, false, false, 22), false, '<w:spacing w:before="40"/>');
+                body += p('center', DOCX_R('THỜI KHÓA BIỂU TỔNG HỢP GIÁO VIÊN', true, 34), false);
+                body += p('center', DOCX_R(year, false, 22), false, '<w:spacing w:before="40"/>');
                 body += `<w:p><w:pPr><w:spacing w:after="120"/></w:pPr></w:p>` + docxMasterTable();
-                body += p('right', DOCX_R(`Xuất từ TKB PRO ngày ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`, false, false, 18), false, '<w:spacing w:before="120"/>');
+                body += p('right', DOCX_R(`Xuất từ TKB PRO ngày ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`, false, 18), false, '<w:spacing w:before="120"/>');
             } else {
                 models.forEach((m, idx) => {
-                    body += p('center', DOCX_R('THỜI KHÓA BIỂU', false, true, 34), idx > 0);
-                    body += p('center', DOCX_R(m.heading, false, true, 28), false, '<w:spacing w:before="60"/>');
+                    body += p('center', DOCX_R('THỜI KHÓA BIỂU', true, 34), idx > 0);
+                    body += p('center', DOCX_R(m.heading, true, 28), false, '<w:spacing w:before="60"/>');
                     const sub = [year, m.info].filter(Boolean).join(' | ');
-                    if (sub) body += p('center', DOCX_R(sub, false, false, 22), false, '<w:spacing w:before="40"/>');
+                    if (sub) body += p('center', DOCX_R(sub, false, 22), false, '<w:spacing w:before="40"/>');
                     body += `<w:p><w:pPr><w:spacing w:after="120"/></w:pPr></w:p>` + docxTable(m);
-                    body += p('right', DOCX_R(`Xuất từ TKB PRO ngày ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`, false, false, 18), false, '<w:spacing w:before="120"/>');
+                    body += p('right', DOCX_R(`Xuất từ TKB PRO ngày ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`, false, 18), false, '<w:spacing w:before="120"/>');
                 });
             }
             
