@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phần mềm Xếp Thời Khóa Biểu THPT Thông Minh</title>
+    <!-- Sử dụng Tailwind CSS qua CDN cho giao diện hiện đại, phát triển nhanh -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome cho Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a', // Xanh dương đậm (blue-900)
+                        secondary: '#f3f4f6', // Xám nhạt (gray-100)
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Tối ưu thanh cuộn (Scrollbar) cho dữ liệu lớn */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+        /* Cố định Header và Cột đầu tiên (Sticky) */
+        .table-container { max-height: calc(100vh - 200px); overflow: auto; }
+        th { position: sticky; top: 0; z-index: 20; background-color: #f8fafc; }
+        .sticky-col { position: sticky; left: 0; z-index: 10; background-color: #f8fafc; }
+        th.sticky-col { z-index: 30; }
+
+        /* Màu sắc môn học chuẩn GDPT 2018 */
+        .bg-subject-normal { background-color: #e0f2fe; border-left: 4px solid #38bdf8; } /* Xanh nhạt: Môn văn hóa */
+        .bg-subject-hdtn { background-color: #fef08a; border-left: 4px solid #eab308; } /* Vàng nhạt: HĐTN, GDĐP */
+        .bg-subject-chuyende { background-color: #f3e8ff; border-left: 4px solid #a855f7; } /* Tím nhạt: Chuyên đề */
+
+        /* Hiệu ứng Kéo thả (Drag & Drop) */
+        .draggable { cursor: grab; transition: all 0.2s ease; }
+        .draggable:active { cursor: grabbing; opacity: 0.7; transform: scale(0.95); }
+        .drop-zone { min-height: 80px; transition: background-color 0.2s; }
+        .drop-zone.drag-over { background-color: #dcfce3 !important; border: 2px dashed #22c55e; }
+        
+        /* Hiệu ứng lỗi (Conflict) */
+        @keyframes flashRed {
+            0%, 100% { background-color: transparent; }
+            50% { background-color: #fca5a5; }
+        }
+        .conflict-error { animation: flashRed 0.5s ease 3; border: 2px solid #ef4444 !important; }
+    </style>
+</head>
+<body class="bg-secondary text-gray-800 h-screen overflow-hidden flex font-sans">
+
+    <!-- 1. SIDEBAR (Thanh điều hướng trái) -->
+    <aside class="w-64 bg-primary text-white flex flex-col transition-all duration-300" id="sidebar">
+        <div class="p-4 flex items-center justify-between border-b border-blue-800">
+            <h1 class="text-xl font-bold font-mono tracking-wider"><i class="fa-solid fa-calendar-days mr-2"></i>TKB PRO</h1>
+            <button onclick="toggleSidebar()" class="hover:text-blue-300"><i class="fa-solid fa-bars"></i></button>
+        </div>
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+            <a href="#" class="block p-3 rounded bg-blue-800 font-semibold"><i class="fa-solid fa-chart-pie w-6"></i> Tổng quan</a>
+            <a href="#" class="block p-3 rounded hover:bg-blue-800 transition"><i class="fa-solid fa-database w-6"></i> Dữ liệu hệ thống</a>
+            <a href="#" class="block p-3 rounded hover:bg-blue-800 transition"><i class="fa-solid fa-link w-6"></i> Thiết lập ràng buộc</a>
+            <a href="#" class="block p-3 rounded hover:bg-blue-800 transition text-yellow-300"><i class="fa-solid fa-wand-magic-sparkles w-6"></i> Xếp tự động (AI)</a>
+            <a href="#" class="block p-3 rounded hover:bg-blue-800 transition"><i class="fa-solid fa-table w-6"></i> Xem thời khóa biểu</a>
+            <a href="#" class="block p-3 rounded hover:bg-blue-800 transition"><i class="fa-solid fa-file-export w-6"></i> Xuất Excel / PDF</a>
+        </nav>
+        <div class="p-4 border-t border-blue-800 text-sm text-blue-300 text-center">
+            Phiên bản 2.0 (GDPT 2018)
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT (Khu vực làm việc chính) -->
+    <main class="flex-1 flex flex-col min-w-0">
+        
+        <!-- 2. TOPBAR (Thanh trên) -->
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center z-10">
+            <div class="flex items-center space-x-4 w-1/2">
+                <div class="relative w-full max-w-md">
+                    <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
+                    <input type="text" placeholder="Tìm kiếm giáo viên, lớp học..." class="w-full pl-10 pr-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50">
+                </div>
+            </div>
+            <div class="flex items-center space-x-6">
+                <div class="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                    <i class="fa-regular fa-clock text-blue-600 mr-1"></i> Tuần 12 (Học kỳ I)
+                </div>
+                <button class="relative text-gray-500 hover:text-blue-600">
+                    <i class="fa-regular fa-bell text-xl"></i>
+                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">3</span>
+                </button>
+                <div class="flex items-center gap-2 cursor-pointer">
+                    <img src="https://ui-avatars.com/api/?name=Admin&background=1e3a8a&color=fff" class="w-8 h-8 rounded-full" alt="User">
+                </div>
+            </div>
+        </header>
+
+        <!-- 3. WORKSPACE (Khu vực TKB) -->
+        <div class="flex-1 p-6 flex flex-col overflow-hidden">
+            
+            <!-- Filters -->
+            <div class="bg-white p-4 rounded-lg shadow-sm mb-4 flex flex-wrap gap-4 items-center justify-between">
+                <div class="flex gap-4">
+                    <select class="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option>Khối 10 (Chương trình mới)</option>
+                        <option>Khối 11 (Chương trình mới)</option>
+                        <option>Khối 12</option>
+                    </select>
+                    <select class="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option>Lớp 10A1 (Tổ hợp Tự nhiên)</option>
+                        <option>Lớp 10A2</option>
+                        <option>Lớp 10D1 (Tổ hợp Xã hội)</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-50"><i class="fa-solid fa-filter mr-1"></i> Bộ lọc nâng cao</button>
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 shadow-sm"><i class="fa-solid fa-download mr-1"></i> Xuất TKB Lớp này</button>
+                </div>
+            </div>
+
+            <!-- Bảng lưới TKB (Timetable Grid) -->
+            <div class="bg-white flex-1 rounded-lg shadow-sm border border-gray-200 flex flex-col overflow-hidden relative">
+                <div class="p-3 bg-gray-50 border-b flex justify-between items-center text-sm font-semibold">
+                    <span>Thời khóa biểu: <span class="text-blue-600 text-lg">10A1</span></span>
+                    <div class="flex gap-4 text-xs font-normal">
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 block bg-blue-100 border border-blue-400"></span> Môn Văn hóa</span>
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 block bg-yellow-100 border border-yellow-400"></span> HĐTN / GDĐP</span>
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 block bg-purple-100 border border-purple-400"></span> Chuyên đề HT</span>
+                    </div>
+                </div>
+
+                <div class="table-container flex-1">
+                    <table class="w-full border-collapse text-sm text-center">
+                        <thead>
+                            <tr>
+                                <th class="border-b border-r p-3 w-16 sticky-col bg-gray-100 shadow-[1px_0_0_#e5e7eb]">Buổi</th>
+                                <th class="border-b border-r p-3 w-16 sticky-col bg-gray-100 shadow-[1px_0_0_#e5e7eb]" style="left: 64px;">Tiết</th>
+                                <th class="border-b border-r p-3 min-w-[150px]">Thứ 2</th>
+                                <th class="border-b border-r p-3 min-w-[150px]">Thứ 3</th>
+                                <th class="border-b border-r p-3 min-w-[150px]">Thứ 4</th>
+                                <th class="border-b border-r p-3 min-w-[150px]">Thứ 5</th>
+                                <th class="border-b border-r p-3 min-w-[150px]">Thứ 6</th>
+                                <th class="border-b p-3 min-w-[150px]">Thứ 7</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tkb-body">
+                            <!-- Dữ liệu sẽ được render bằng JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 4. MODAL CHI TIẾT (Chỉnh sửa thủ công) -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-96 transform transition-all">
+            <div class="flex justify-between items-center border-b p-4">
+                <h3 class="text-lg font-bold text-gray-800">Chỉnh sửa Tiết học</h3>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-4 space-y-4">
+                <input type="hidden" id="modal-cell-id">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Môn học</label>
+                    <input type="text" id="modal-subject" class="w-full border rounded px-3 py-2 bg-gray-50 text-gray-500 cursor-not-allowed" readonly>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Giáo viên (Có thể dạy thay)</label>
+                    <select id="modal-teacher" class="w-full border rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option>Nguyễn Văn A</option>
+                        <option>Trần Thị B</option>
+                        <option>Lê Văn C</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Phòng học / Địa điểm</label>
+                    <input type="text" id="modal-room" class="w-full border rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+            <div class="border-t p-4 flex justify-end gap-2 bg-gray-50 rounded-b-lg">
+                <button onclick="closeModal()" class="px-4 py-2 border rounded text-gray-600 hover:bg-gray-100 text-sm">Hủy</button>
+                <button onclick="saveModal()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm shadow-sm">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST THÔNG BÁO LỖI RÀNG BUỘC -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-red-600 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3">
+        <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+        <span id="toast-msg" class="font-medium"></span>
+    </div>
+
+    <script>
+        // --- 1. DỮ LIỆU GIẢ LẬP (MOCK DATA) ---
+        // Đại diện cho Dữ liệu TKB lấy từ Backend (API)
+        const subjects = [
+            { id: 't2_s1', subject: 'Chào cờ', teacher: 'GVCN', room: 'Sân trường', type: 'hdtn' },
+            { id: 't2_s2', subject: 'Toán', teacher: 'Nguyễn Văn A', room: 'P.101', type: 'normal' },
+            { id: 't2_s3', subject: 'Toán', teacher: 'Nguyễn Văn A', room: 'P.101', type: 'normal' },
+            { id: 't2_s4', subject: 'Ngữ văn', teacher: 'Trần Thị B', room: 'P.101', type: 'normal' },
+            { id: 't3_s1', subject: 'Vật lý', teacher: 'Lê Văn C', room: 'P.101', type: 'normal' },
+            { id: 't3_s2', subject: 'Chuyên đề Vật lý', teacher: 'Lê Văn C', room: 'P.101', type: 'chuyende' },
+            { id: 't3_s5', subject: 'Thể dục', teacher: 'Phạm Văn D', room: 'Sân vận động', type: 'normal' },
+            { id: 't4_s4', subject: 'HĐTN-HN', teacher: 'GVCN', room: 'P.101', type: 'hdtn' },
+            { id: 't5_c1', subject: 'GD Địa phương', teacher: 'Đinh Thị E', room: 'P.101', type: 'hdtn' },
+        ];
+
+        // --- 2. RENDER BẢNG TKB ---
+        const tbody = document.getElementById('tkb-body');
+        const days = ['t2', 't3', 't4', 't5', 't6', 't7'];
+        
+        function renderTable() {
+            let html = '';
+            // Render Buổi Sáng (5 tiết)
+            for (let i = 1; i <= 5; i++) {
+                html += `<tr>`;
+                if (i === 1) html += `<td rowspan="5" class="border-b border-r font-bold text-gray-700 bg-white sticky-col shadow-[1px_0_0_#e5e7eb] writing-mode-vertical whitespace-nowrap">SÁNG</td>`;
+                html += `<td class="border-b border-r bg-gray-50 font-medium sticky-col shadow-[1px_0_0_#e5e7eb]" style="left: 64px;">Tiết ${i}</td>`;
+                
+                days.forEach(day => {
+                    html += `<td class="border-b border-r p-1 align-top drop-zone" data-day="${day}" data-period="s${i}" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event)">
+                        ${getCellContent(day, `s${i}`)}
+                    </td>`;
+                });
+                html += `</tr>`;
+            }
+            
+            // Render Buổi Chiều (5 tiết)
+            for (let i = 1; i <= 5; i++) {
+                html += `<tr>`;
+                if (i === 1) html += `<td rowspan="5" class="border-b border-r font-bold text-gray-700 bg-gray-50 sticky-col shadow-[1px_0_0_#e5e7eb] writing-mode-vertical whitespace-nowrap">CHIỀU</td>`;
+                html += `<td class="border-b border-r bg-gray-100 font-medium sticky-col shadow-[1px_0_0_#e5e7eb]" style="left: 64px;">Tiết ${i}</td>`;
+                
+                days.forEach(day => {
+                    html += `<td class="border-b border-r p-1 align-top drop-zone bg-gray-50/30" data-day="${day}" data-period="c${i}" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event)">
+                        ${getCellContent(day, `c${i}`)}
+                    </td>`;
+                });
+                html += `</tr>`;
+            }
+            tbody.innerHTML = html;
+        }
+
+        function getCellContent(day, period) {
+            const cellId = `${day}_${period}`;
+            const data = subjects.find(s => s.id === cellId);
+            if (!data) return '';
+
+            let bgClass = 'bg-subject-normal';
+            if (data.type === 'hdtn') bgClass = 'bg-subject-hdtn';
+            if (data.type === 'chuyende') bgClass = 'bg-subject-chuyende';
+
+            return `
+                <div id="card_${cellId}" class="draggable ${bgClass} rounded p-2 text-left h-full shadow-sm flex flex-col justify-between" 
+                     draggable="true" ondragstart="drag(event)" ondblclick="openModal('${cellId}', '${data.subject}', '${data.teacher}', '${data.room}')">
+                    <div class="font-bold text-gray-800 text-xs truncate" title="${data.subject}">${data.subject}</div>
+                    <div class="text-[11px] text-gray-600 mt-1 truncate"><i class="fa-solid fa-user-tie mr-1"></i>${data.teacher}</div>
+                    <div class="text-[10px] text-gray-500 truncate"><i class="fa-solid fa-location-dot mr-1"></i>${data.room}</div>
+                </div>
+            `;
+        }
+
+        // --- 3. LOGIC KÉO THẢ (DRAG & DROP) & CẢNH BÁO RÀNG BUỘC ---
+        function allowDrop(ev) {
+            ev.preventDefault();
+            const dropZone = ev.target.closest('.drop-zone');
+            if(dropZone) dropZone.classList.add('drag-over');
+        }
+
+        function dragLeave(ev) {
+            const dropZone = ev.target.closest('.drop-zone');
+            if(dropZone) dropZone.classList.remove('drag-over');
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            const dropZone = ev.target.closest('.drop-zone');
+            if(dropZone) dropZone.classList.remove('drag-over');
+
+            const draggedId = ev.dataTransfer.getData("text");
+            const draggedElement = document.getElementById(draggedId);
+            
+            // LOGIC KIỂM TRA RÀNG BUỘC (Ví dụ: Không xếp Thể dục tiết 5)
+            const targetPeriod = dropZone.getAttribute('data-period');
+            const subjectName = draggedElement.querySelector('.font-bold').innerText;
+            
+            if (subjectName.includes('Thể dục') && (targetPeriod === 's5' || targetPeriod === 'c5')) {
+                showToast("Vi phạm ràng buộc: Không xếp Thể dục vào tiết 5!");
+                dropZone.classList.add('conflict-error');
+                setTimeout(() => dropZone.classList.remove('conflict-error'), 1500);
+                return; // Từ chối thả
+            }
+
+            // Xử lý đổi chỗ (Swap) nếu ô đích đã có tiết học
+            if (dropZone.querySelector('.draggable')) {
+                const existingElement = dropZone.querySelector('.draggable');
+                const originalParent = draggedElement.parentElement;
+                originalParent.appendChild(existingElement);
+            }
+            
+            dropZone.appendChild(draggedElement);
+        }
+
+        // --- 4. LOGIC MODAL & TOAST ---
+        function openModal(id, subject, teacher, room) {
+            document.getElementById('modal-cell-id').value = id;
+            document.getElementById('modal-subject').value = subject;
+            document.getElementById('modal-teacher').value = teacher;
+            document.getElementById('modal-room').value = room;
+            
+            const modal = document.getElementById('editModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('editModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function saveModal() {
+            const id = document.getElementById('modal-cell-id').value;
+            const newTeacher = document.getElementById('modal-teacher').value;
+            const newRoom = document.getElementById('modal-room').value;
+            
+            // Cập nhật DOM (Trong thực tế sẽ gọi API PUT/PATCH về Backend)
+            const card = document.getElementById(`card_${id}`);
+            if(card) {
+                card.querySelector('.text-\\[11px\\]').innerHTML = `<i class="fa-solid fa-user-tie mr-1"></i>${newTeacher}`;
+                card.querySelector('.text-\\[10px\\]').innerHTML = `<i class="fa-solid fa-location-dot mr-1"></i>${newRoom}`;
+            }
+            closeModal();
+            showToast("Đã lưu thay đổi thủ công!", "success");
+        }
+
+        function showToast(message, type = "error") {
+            const toast = document.getElementById('toast');
+            const msgObj = document.getElementById('toast-msg');
+            msgObj.innerText = message;
+            
+            if (type === "success") {
+                toast.classList.replace('bg-red-600', 'bg-green-600');
+                toast.querySelector('i').className = "fa-solid fa-circle-check text-xl";
+            } else {
+                toast.classList.replace('bg-green-600', 'bg-red-600');
+                toast.querySelector('i').className = "fa-solid fa-triangle-exclamation text-xl";
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // --- 5. TIỆN ÍCH UI ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar.classList.contains('w-64')) {
+                sidebar.classList.remove('w-64');
+                sidebar.classList.add('w-20');
+                // Code ẩn text trong menu (Giản lược cho demo)
+            } else {
+                sidebar.classList.remove('w-20');
+                sidebar.classList.add('w-64');
+            }
+        }
+
+        // Khởi tạo
+        window.onload = () => {
+            renderTable();
+        };
+    </script>
+</body>
+</html>
