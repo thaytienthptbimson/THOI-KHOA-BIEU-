@@ -4,66 +4,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TKB PRO - Phần mềm Xếp Thời Khóa Biểu THPT</title>
-    <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#1e3a8a', 
-                        secondary: '#f3f4f6', 
-                    }
-                }
-            }
-        }
+        tailwind.config = { theme: { extend: { colors: { primary: '#1e3a8a', secondary: '#f3f4f6' } } } }
     </script>
     <style>
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
-
         .table-container { max-height: calc(100vh - 220px); overflow: auto; }
         .tkb-table th { position: sticky; top: 0; z-index: 20; background-color: #f8fafc; }
         .tkb-table .sticky-col { position: sticky; left: 0; z-index: 10; background-color: #f8fafc; }
         .tkb-table th.sticky-col { z-index: 30; }
-
         .bg-subject-normal { background-color: #e0f2fe; border-left: 4px solid #38bdf8; } 
         .bg-subject-hdtn { background-color: #fef08a; border-left: 4px solid #eab308; } 
         .bg-subject-chuyende { background-color: #f3e8ff; border-left: 4px solid #a855f7; } 
-
         .draggable { cursor: grab; transition: all 0.2s ease; }
         .draggable:active { cursor: grabbing; opacity: 0.7; transform: scale(0.95); }
         .drop-zone { min-height: 80px; transition: background-color 0.2s; }
         .drop-zone.drag-over { background-color: #dcfce3 !important; border: 2px dashed #22c55e; }
-        
-        @keyframes flashRed {
-            0%, 100% { background-color: transparent; }
-            50% { background-color: #fca5a5; }
-        }
-        .conflict-error { animation: flashRed 0.5s ease 3; border: 2px solid #ef4444 !important; }
+        .conflict-error { border: 2px solid #ef4444 !important; background-color: #fca5a5 !important; }
         .view-hidden { display: none !important; }
     </style>
 </head>
 <body class="bg-secondary text-gray-800 h-screen overflow-hidden flex font-sans">
 
     <!-- SIDEBAR -->
-    <aside class="w-64 bg-primary text-white flex flex-col transition-all duration-300" id="sidebar">
-        <div class="p-4 flex items-center justify-between border-b border-blue-800">
+    <aside class="w-64 bg-primary text-white flex flex-col transition-all duration-300">
+        <div class="p-4 flex items-center border-b border-blue-800">
             <h1 class="text-xl font-bold font-mono tracking-wider"><i class="fa-solid fa-calendar-days mr-2"></i>TKB PRO</h1>
         </div>
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-            <a href="#" onclick="switchView('timetable')" id="menu-timetable" class="menu-item block p-3 rounded bg-blue-800 font-semibold transition">
+            <a href="#" onclick="switchView('timetable')" id="menu-timetable" class="menu-item block p-3 rounded hover:bg-blue-800 transition">
                 <i class="fa-solid fa-table w-6"></i> Bảng Thời Khóa Biểu
             </a>
-            <a href="#" onclick="switchView('data-entry')" id="menu-data-entry" class="menu-item block p-3 rounded hover:bg-blue-800 transition">
+            <a href="#" onclick="switchView('data-entry')" id="menu-data-entry" class="menu-item block p-3 rounded bg-blue-800 font-semibold transition">
                 <i class="fa-solid fa-database w-6"></i> Nhập Dữ Liệu PCCM
             </a>
-            <a href="#" class="block p-3 rounded hover:bg-blue-800 transition text-yellow-300">
+            <a href="#" onclick="switchView('auto-schedule')" id="menu-auto-schedule" class="menu-item block p-3 rounded hover:bg-blue-800 transition text-yellow-300">
                 <i class="fa-solid fa-wand-magic-sparkles w-6"></i> Xếp TKB Tự Động (AI)
             </a>
         </nav>
@@ -72,23 +53,21 @@
     <!-- MAIN CONTENT -->
     <main class="flex-1 flex flex-col min-w-0 bg-secondary">
         <header class="bg-white shadow-sm p-4 flex justify-between items-center z-10 shrink-0">
-            <h2 id="topbar-title" class="text-lg font-bold text-gray-700">Hiển thị Thời Khóa Biểu</h2>
+            <h2 id="topbar-title" class="text-lg font-bold text-gray-700">Nhập dữ liệu PCCM</h2>
             <div class="flex items-center space-x-6">
                 <div class="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-                    <i class="fa-regular fa-clock text-blue-600 mr-1"></i> Năm học 2024-2025
+                    Năm học 2024-2025
                 </div>
             </div>
         </header>
 
         <!-- VIEW 1: BẢNG TKB -->
-        <div id="view-timetable" class="flex-1 p-6 flex flex-col overflow-hidden">
+        <div id="view-timetable" class="view-hidden flex-1 p-6 flex-col overflow-hidden">
             <div class="bg-white p-4 rounded-lg shadow-sm mb-4 flex flex-wrap gap-4 items-center justify-between shrink-0">
-                <div class="flex gap-4">
-                    <select class="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-blue-500">
-                        <option>Khối 10 (GDPT 2018)</option>
-                    </select>
-                    <select class="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-blue-500">
-                        <option>Lớp 10A1</option>
+                <div class="flex gap-4 items-center">
+                    <span class="font-bold text-gray-600">Chọn lớp:</span>
+                    <select id="class-filter" onchange="renderTimetable()" class="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-blue-500 font-bold text-blue-700">
+                        <option value="">-- Chưa có lớp --</option>
                     </select>
                 </div>
             </div>
@@ -114,175 +93,134 @@
         </div>
 
         <!-- VIEW 2: NHẬP DỮ LIỆU -->
-        <div id="view-data-entry" class="view-hidden flex-1 overflow-auto p-6 flex-col lg:flex-row gap-6">
+        <div id="view-data-entry" class="flex flex-1 overflow-auto p-6 flex-col lg:flex-row gap-6">
             <div class="w-full lg:w-1/3 bg-white p-6 rounded-lg shadow-sm border border-gray-200 h-fit mb-6 lg:mb-0">
                 <form id="dataForm" onsubmit="saveTeacherData(event)">
-                    
-                    <!-- 1. THÔNG TIN CHUNG -->
                     <div class="mb-5 border-b pb-4">
                         <h3 class="font-bold text-blue-800 mb-3"><i class="fa-solid fa-user text-sm mr-1"></i> 1. Thông tin chung</h3>
                         <div class="mb-3">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Họ và tên Giáo viên *</label>
-                            <input type="text" id="gv_name" required placeholder="VD: Nguyễn Văn A" class="w-full border rounded px-3 py-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Tổ chuyên môn</label>
-                            <div class="flex gap-2">
-                                <select id="gv_dept" class="flex-1 border rounded px-3 py-2 focus:ring-blue-500">
-                                    <!-- Dữ liệu Tổ render bằng JS -->
-                                </select>
-                                <button type="button" onclick="addNewDept()" class="bg-gray-100 border border-gray-300 text-gray-700 px-3 py-2 rounded hover:bg-gray-200" title="Thêm Tổ mới">
-                                    <i class="fa-solid fa-plus"></i>
-                                </button>
-                            </div>
+                            <input type="text" id="gv_name" required placeholder="Họ và tên Giáo viên" class="w-full border rounded px-3 py-2">
                         </div>
                     </div>
-
-                    <!-- 2. KIÊM NHIỆM -->
                     <div class="mb-5 border-b pb-4">
-                        <h3 class="font-bold text-blue-800 mb-3"><i class="fa-solid fa-briefcase text-sm mr-1"></i> 2. Kiêm nhiệm (Quy đổi tiết)</h3>
-                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-                            <label class="flex items-center space-x-2" title="Quy đổi 4 tiết"><input type="checkbox" name="kiem_nhiem" value="GVCN"><span>GV Chủ nhiệm</span></label>
-                            <label class="flex items-center space-x-2" title="Quy đổi 3 tiết"><input type="checkbox" name="kiem_nhiem" value="Tổ trưởng"><span>Tổ trưởng CM</span></label>
-                            <label class="flex items-center space-x-2" title="Quy đổi 1 tiết"><input type="checkbox" name="kiem_nhiem" value="Tổ phó"><span>Tổ phó CM</span></label>
-                            <label class="flex items-center space-x-2" title="Quy đổi 6 tiết"><input type="checkbox" name="kiem_nhiem" value="Bí thư Đoàn"><span>Bí thư Đoàn</span></label>
-                            <label class="flex items-center space-x-2" title="Quy đổi 2 tiết"><input type="checkbox" name="kiem_nhiem" value="Phó BT Đoàn"><span>Phó BT Đoàn</span></label>
-                            <label class="flex items-center space-x-2" title="Quy đổi 3 tiết"><input type="checkbox" name="kiem_nhiem" value="Công đoàn"><span>Công đoàn</span></label>
+                        <h3 class="font-bold text-blue-800 mb-3"><i class="fa-solid fa-briefcase text-sm mr-1"></i> 2. Kiêm nhiệm</h3>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="GVCN"><span>GV Chủ nhiệm (+4)</span></label>
+                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Bí thư Đoàn"><span>Bí thư Đoàn (+6)</span></label>
+                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Tổ phó"><span>Tổ phó CM (+1)</span></label>
+                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Tổ trưởng"><span>Tổ trưởng CM (+3)</span></label>
                         </div>
                     </div>
-
-                    <!-- 3. PHÂN CÔNG GIẢNG DẠY -->
                     <div class="mb-5">
                         <div class="flex justify-between items-center mb-3">
-                            <h3 class="font-bold text-blue-800"><i class="fa-solid fa-chalkboard-user text-sm mr-1"></i> 3. Phân công Dạy thực tế</h3>
-                            <button type="button" onclick="addTeachingRow()" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded border border-green-300">
-                                <i class="fa-solid fa-plus"></i> Thêm môn/lớp
-                            </button>
+                            <h3 class="font-bold text-blue-800"><i class="fa-solid fa-chalkboard-user text-sm mr-1"></i> 3. Phân công Dạy</h3>
+                            <button type="button" onclick="addTeachingRow()" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded border">Thêm môn/lớp</button>
                         </div>
                         <div id="teaching_container" class="space-y-3"></div>
                     </div>
-                    
-                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition">
-                        <i class="fa-solid fa-floppy-disk mr-2"></i> LƯU DỮ LIỆU
-                    </button>
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700">LƯU DỮ LIỆU</button>
                 </form>
             </div>
-
-            <!-- BẢNG HIỂN THỊ DỮ LIỆU ĐÃ NHẬP -->
-            <div class="w-full lg:w-2/3 bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col h-full">
+            <div class="w-full lg:w-2/3 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-gray-700 text-lg">Danh sách Phân công</h3>
-                    <div class="text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-medium">
-                        Tổng số: <span id="total_gv">0</span> GV
-                    </div>
+                    <h3 class="font-bold text-gray-700 text-lg">Danh sách Giáo viên (<span id="total_gv">0</span>)</h3>
+                    <button onclick="mockData()" class="text-sm bg-gray-100 px-3 py-1 border rounded hover:bg-gray-200">Tạo 3 GV Mẫu (Test)</button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse text-sm">
-                        <thead>
-                            <tr class="bg-gray-100 text-gray-700">
-                                <th class="border p-2 text-left">Họ Tên / Tổ</th>
-                                <th class="border p-2 text-left w-1/4">Kiêm nhiệm</th>
-                                <th class="border p-2 text-left w-1/3">Dạy thực tế (Môn - Lớp - Tiết)</th>
-                                <th class="border p-2 text-center w-28">Tổng tiết<br><span class="text-[10px] font-normal text-gray-500">(Định mức 17)</span></th>
-                                <th class="border p-2 text-center w-12">Xóa</th>
-                            </tr>
+                        <thead class="bg-gray-100 text-gray-700">
+                            <tr><th class="border p-2">Họ Tên</th><th class="border p-2">Dạy thực tế</th><th class="border p-2">Tổng tiết</th><th class="border p-2">Xóa</th></tr>
                         </thead>
                         <tbody id="dataTableBody"></tbody>
                     </table>
                 </div>
             </div>
         </div>
+
+        <!-- VIEW 3: CẤU HÌNH XẾP TKB AI -->
+        <div id="view-auto-schedule" class="view-hidden flex-1 overflow-auto p-6 flex items-center justify-center bg-gray-50">
+            <div class="bg-white p-8 rounded-lg shadow-md border border-gray-200 w-full max-w-2xl">
+                <h2 class="text-2xl font-bold text-blue-800 mb-2 border-b pb-4"><i class="fa-solid fa-microchip mr-2"></i>Cấu hình Thuật toán Xếp Lịch</h2>
+                
+                <div class="space-y-5 my-6">
+                    <div class="p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                        <label class="flex items-center font-semibold text-blue-800">
+                            <input type="checkbox" checked disabled class="mr-3 w-5 h-5 rounded text-blue-600 focus:ring-blue-500"> 
+                            Chỉ xếp lịch Buổi sáng (Từ Thứ 2 - Thứ 7)
+                        </label>
+                        <p class="ml-8 text-sm text-gray-600 mt-1">Hệ thống sẽ chỉ sử dụng 5 tiết/ngày từ T2-T7 (Tối đa 30 slot).</p>
+                    </div>
+
+                    <div class="p-4 hover:bg-gray-50 border rounded-lg transition">
+                        <label class="flex items-center font-semibold text-gray-800 cursor-pointer">
+                            <input type="checkbox" id="ai-dayoff" checked class="mr-3 w-5 h-5 rounded text-blue-600 focus:ring-blue-500"> 
+                            Ưu tiên xếp nghỉ 1 ngày/tuần
+                        </label>
+                        <p class="ml-8 text-sm text-gray-600 mt-1">AI sẽ tìm khối lượng tiết của GV (<= 25 tiết) để tự động khóa (block) ngẫu nhiên 1 ngày không xếp tiết.</p>
+                    </div>
+
+                    <div class="p-4 hover:bg-gray-50 border rounded-lg transition">
+                        <label class="flex items-center font-semibold text-gray-800 cursor-pointer">
+                            <input type="checkbox" id="ai-noconsecutive" checked class="mr-3 w-5 h-5 rounded text-blue-600 focus:ring-blue-500"> 
+                            Không xếp 2 tiết cùng 1 môn liên tục
+                        </label>
+                        <p class="ml-8 text-sm text-gray-600 mt-1">Tránh tình trạng học sinh phải học Toán ở tiết 1 rồi lại học Toán ở tiết 2.</p>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-4 border-t">
+                    <button onclick="runAutoSchedule()" id="btn-run-ai" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition transform hover:scale-105 text-lg">
+                        <i class="fa-solid fa-bolt mr-2"></i> BẮT ĐẦU CHẠY THUẬT TOÁN XẾP TKB
+                    </button>
+                </div>
+
+                <!-- Progress UI -->
+                <div id="ai-progress" class="hidden mt-6">
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium text-blue-700">Đang khởi tạo ma trận lưới...</span>
+                        <span class="text-sm font-medium text-blue-700" id="ai-percent">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="ai-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- TOAST -->
-    <div id="toast" class="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3">
-        <i class="fa-solid fa-circle-check text-xl"></i>
-        <span id="toast-msg" class="font-medium"></span>
+    <div id="toast" class="fixed bottom-4 right-4 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3">
+        <i class="fa-solid fa-circle-check text-xl"></i><span id="toast-msg" class="font-medium"></span>
     </div>
 
-    <!-- SCRIPT -->
+    <!-- SCRIPTS -->
     <script>
-        // --- BẢNG QUY ĐỔI TIẾT KIÊM NHIỆM ---
-        // Bạn có thể chỉnh sửa số tiết tại đây nếu nhà trường có quy định khác
-        const DUTY_PERIODS = {
-            "GVCN": 4,          // Chủ nhiệm
-            "Bí thư Đoàn": 6,   // Bí thư đoàn trường
-            "Tổ phó": 1,        // Tổ phó chuyên môn
-            "Tổ trưởng": 3,     // Tổ trưởng chuyên môn
-            "Phó BT Đoàn": 2,   // Phó bí thư đoàn
-            "Công đoàn": 3      // Công đoàn
-        };
+        const DUTY_PERIODS = { "GVCN": 4, "Bí thư Đoàn": 6, "Tổ phó": 1, "Tổ trưởng": 3 };
+        let dbTeachers = [];
+        let globalSchedule = []; // Biến lưu kết quả TKB của toàn trường
 
-        // --- ROUTING ---
+        // --- 1. ROUTING ---
         function switchView(viewName) {
-            document.querySelectorAll('.menu-item').forEach(el => el.classList.replace('bg-blue-800', 'hover:bg-blue-800'));
-            document.getElementById(`menu-${viewName}`).classList.replace('hover:bg-blue-800', 'bg-blue-800');
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.replace('bg-blue-800', 'hover:bg-blue-800').classList.remove('font-semibold'));
+            document.getElementById(`menu-${viewName}`).classList.replace('hover:bg-blue-800', 'bg-blue-800').classList.add('font-semibold');
             
-            document.getElementById('view-timetable').classList.add('view-hidden');
-            document.getElementById('view-timetable').classList.remove('flex');
-            document.getElementById('view-data-entry').classList.add('view-hidden');
-            document.getElementById('view-data-entry').classList.remove('flex');
-
+            document.querySelectorAll('main > div[id^="view-"]').forEach(el => {
+                el.classList.add('view-hidden'); el.classList.remove('flex');
+            });
             document.getElementById(`view-${viewName}`).classList.remove('view-hidden');
             document.getElementById(`view-${viewName}`).classList.add('flex');
-            document.getElementById('topbar-title').innerText = viewName === 'timetable' ? "Hiển thị Thời Khóa Biểu" : "Nhập dữ liệu PCCM";
+            
+            const titles = { 'timetable': 'Bảng Thời Khóa Biểu', 'data-entry': 'Nhập dữ liệu PCCM', 'auto-schedule': 'Cấu hình Xếp TKB (AI)' };
+            document.getElementById('topbar-title').innerText = titles[viewName];
         }
 
-        // --- QUẢN LÝ TỔ CHUYÊN MÔN ---
-        let dbDepartments = ['Tổ Toán - Tin', 'Tổ Ngữ văn', 'Tổ Ngoại ngữ'];
-
-        function renderDepartments() {
-            const select = document.getElementById('gv_dept');
-            select.innerHTML = ''; 
-            dbDepartments.forEach(dept => {
-                select.innerHTML += `<option value="${dept}">${dept}</option>`;
-            });
-        }
-
-        function addNewDept() {
-            const newDept = prompt("Nhập tên Tổ chuyên môn mới (Ví dụ: Tổ Khoa học Tự nhiên):");
-            if (newDept && newDept.trim() !== "") {
-                const trimmedName = newDept.trim();
-                if (!dbDepartments.includes(trimmedName)) {
-                    dbDepartments.push(trimmedName);
-                    renderDepartments();
-                    document.getElementById('gv_dept').value = trimmedName;
-                    showToast("Đã thêm Tổ chuyên môn mới!", "success");
-                } else {
-                    showToast("Lỗi: Tổ này đã tồn tại!", "error");
-                }
-            }
-        }
-
-        // --- BẢNG TKB MẪU ---
-        const subjectsTKB = [{id: 't2_s1', subject: 'Chào cờ', teacher: 'GVCN', type: 'hdtn'}];
-        function renderTimetable() {
-            const tbody = document.getElementById('tkb-body');
-            const days = ['t2', 't3', 't4', 't5', 't6', 't7'];
-            let html = '';
-            for (let i = 1; i <= 5; i++) {
-                html += `<tr>`;
-                if(i==1) html += `<td rowspan="5" class="border-b border-r font-bold text-gray-700 bg-white sticky-col" style="writing-mode: vertical-rl">SÁNG</td>`;
-                html += `<td class="border-b border-r bg-gray-50 sticky-col" style="left:64px;">Tiết ${i}</td>`;
-                days.forEach(day => html += `<td class="border-b border-r p-1"></td>`);
-                html += `</tr>`;
-            }
-            tbody.innerHTML = html;
-        }
-
-        // --- FORM NHẬP PCCM ---
-        let dbTeachers = [];
-
+        // --- 2. LOGIC NHẬP DỮ LIỆU ---
         function addTeachingRow() {
             const row = document.createElement('div');
-            row.className = 'flex gap-2 items-center teaching-row bg-gray-50 p-2 rounded border border-gray-200 mt-2';
+            row.className = 'flex gap-2 items-center teaching-row bg-gray-50 p-2 rounded border mt-2';
             row.innerHTML = `
-                <input type="text" class="sub-inp w-1/3 border rounded px-2 py-1 text-sm" placeholder="Môn (Vật lý)" required list="subject-suggestions">
-                <datalist id="subject-suggestions">
-                    <option value="Toán"><option value="Ngữ văn"><option value="Tiếng Anh">
-                    <option value="Vật lý"><option value="Hóa học"><option value="Sinh học">
-                    <option value="HĐTN-HN"><option value="GD Địa phương">
-                </datalist>
+                <input type="text" class="sub-inp w-1/3 border rounded px-2 py-1 text-sm" placeholder="Môn (Toán)" required>
                 <input type="text" class="cls-inp w-1/3 border rounded px-2 py-1 text-sm" placeholder="Lớp (10A1)" required>
                 <input type="number" class="prd-inp w-1/4 border rounded px-2 py-1 text-sm" placeholder="Tiết" min="1" value="2" required>
                 <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>`;
@@ -291,86 +229,176 @@
 
         function saveTeacherData(e) {
             e.preventDefault();
-            
-            // 1. Tính toán số tiết Giảng dạy thực tế
-            let teachPeriods = 0; 
-            let teaching = [];
+            let teachPeriods = 0, teaching = [], dutyPeriods = 0;
             document.querySelectorAll('.teaching-row').forEach(row => {
-                const sub = row.querySelector('.sub-inp').value;
-                const cls = row.querySelector('.cls-inp').value;
-                const prd = parseInt(row.querySelector('.prd-inp').value);
-                if(cls && sub) { 
-                    teaching.push({ sub, cls, prd }); 
-                    teachPeriods += prd; 
-                }
+                const sub = row.querySelector('.sub-inp').value, cls = row.querySelector('.cls-inp').value, prd = parseInt(row.querySelector('.prd-inp').value);
+                if(cls && sub) { teaching.push({ sub, cls, prd }); teachPeriods += prd; }
             });
-            
-            // 2. Tính toán số tiết Kiêm nhiệm
-            let dutyPeriods = 0;
-            let dutiesList = [];
-            Array.from(document.querySelectorAll('input[name="kiem_nhiem"]:checked')).forEach(el => {
-                let dutyName = el.value;
-                let periodValue = DUTY_PERIODS[dutyName] || 0;
-                dutyPeriods += periodValue;
-                dutiesList.push({ name: dutyName, period: periodValue });
-            });
-
-            // 3. Tổng cộng số tiết quy đổi
-            let totalPeriods = teachPeriods + dutyPeriods;
+            Array.from(document.querySelectorAll('input[name="kiem_nhiem"]:checked')).forEach(el => dutyPeriods += (DUTY_PERIODS[el.value]||0));
             
             dbTeachers.push({
-                id: Date.now(), 
-                name: document.getElementById('gv_name').value, 
-                dept: document.getElementById('gv_dept').value,
-                duties: dutiesList,
-                teaching: teaching, 
-                teachPeriods: teachPeriods,
-                dutyPeriods: dutyPeriods,
-                total: totalPeriods
+                id: Date.now(), name: document.getElementById('gv_name').value, teaching, teachPeriods, total: teachPeriods + dutyPeriods
             });
             
-            renderTeachersTable(); 
-            e.target.reset(); 
-            document.getElementById('teaching_container').innerHTML=''; 
-            addTeachingRow();
+            renderTeachersTable(); e.target.reset(); document.getElementById('teaching_container').innerHTML=''; addTeachingRow();
             showToast("Lưu Giáo viên thành công!", "success");
         }
 
         function renderTeachersTable() {
             const tbody = document.getElementById('dataTableBody'); tbody.innerHTML = '';
             document.getElementById('total_gv').innerText = dbTeachers.length;
-            if(!dbTeachers.length) return tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-gray-500">Chưa có dữ liệu</td></tr>`;
-            
             dbTeachers.forEach(t => {
-                // Hiệu ứng màu cho Tổng tiết (Chuẩn là 17)
-                let totalColorClass = "text-green-600";
-                if (t.total > 17) totalColorClass = "text-red-600";
-                else if (t.total < 17) totalColorClass = "text-yellow-600";
-
                 tbody.innerHTML += `
                 <tr class="border-b hover:bg-blue-50">
-                    <td class="border p-2"><b>${t.name}</b><br><span class="text-xs text-gray-500">${t.dept}</span></td>
-                    
-                    <td class="border p-2 align-top">
-                        ${t.duties.map(d => `<span class="bg-yellow-100 text-xs px-2 py-1 border rounded mr-1 inline-block mb-1 shadow-sm">${d.name} <b class="text-blue-600">(+${d.period}t)</b></span>`).join('') || '<span class="text-gray-400 italic text-xs">Không có</span>'}
-                    </td>
-                    
-                    <td class="border p-2 align-top">
-                        ${t.teaching.map(tc => `<div class="mb-1"><b>${tc.sub}</b> <i class="fa-solid fa-arrow-right text-[10px] mx-1"></i> ${tc.cls} <span class="text-gray-500 text-xs">(${tc.prd}t)</span></div>`).join('')}
-                    </td>
-                    
-                    <td class="border p-2 text-center">
-                        <div class="font-bold text-lg ${totalColorClass}">${t.total}</div>
-                        <div class="text-[10px] text-gray-500 bg-gray-100 rounded px-1 mt-1 inline-block">
-                            Dạy: ${t.teachPeriods} | KN: ${t.dutyPeriods}
-                        </div>
-                    </td>
-                    
-                    <td class="border p-2 text-center"><button onclick="dbTeachers=dbTeachers.filter(x=>x.id!==${t.id});renderTeachersTable()" class="text-red-500 bg-red-50 p-1 rounded hover:bg-red-100"><i class="fa-solid fa-trash"></i></button></td>
+                    <td class="border p-2"><b>${t.name}</b></td>
+                    <td class="border p-2">${t.teaching.map(tc => `${tc.sub} → ${tc.cls} (${tc.prd}t)`).join('<br>')}</td>
+                    <td class="border p-2 text-center font-bold">${t.total}</td>
+                    <td class="border p-2 text-center"><button onclick="dbTeachers=dbTeachers.filter(x=>x.id!==${t.id});renderTeachersTable()" class="text-red-500"><i class="fa-solid fa-trash"></i></button></td>
                 </tr>`;
+            });
+            updateClassDropdown();
+        }
+
+        function updateClassDropdown() {
+            // Quét tất cả các lớp đã nhập để tạo Dropdown
+            let classes = new Set();
+            dbTeachers.forEach(t => t.teaching.forEach(tc => classes.add(tc.cls)));
+            const sel = document.getElementById('class-filter');
+            sel.innerHTML = '<option value="">-- Chọn Lớp --</option>';
+            Array.from(classes).sort().forEach(cls => sel.innerHTML += `<option value="${cls}">${cls}</option>`);
+            
+            // Nếu có lớp thì tự động chọn lớp đầu tiên
+            if(classes.size > 0) sel.selectedIndex = 1;
+        }
+
+        // --- 3. THUẬT TOÁN XẾP TKB (AI GREEDY SCHEDULER) ---
+        function runAutoSchedule() {
+            if(dbTeachers.length === 0) return showToast("Chưa có dữ liệu để xếp!", "error");
+
+            const btn = document.getElementById('btn-run-ai');
+            const progress = document.getElementById('ai-progress');
+            const bar = document.getElementById('ai-bar');
+            
+            btn.classList.add('hidden'); progress.classList.remove('hidden');
+            let percent = 0;
+            
+            // Hiệu ứng thanh tiến trình (Giả lập thời gian AI chạy)
+            const interval = setInterval(() => {
+                percent += 15;
+                bar.style.width = percent + '%';
+                document.getElementById('ai-percent').innerText = percent + '%';
+                
+                if (percent >= 100) {
+                    clearInterval(interval);
+                    executeAlgorithm(); // Chạy thuật toán thật
+                    
+                    setTimeout(() => {
+                        btn.classList.remove('hidden'); progress.classList.add('hidden');
+                        bar.style.width = '0%';
+                        showToast("Đã xếp TKB thành công!", "success");
+                        switchView('timetable'); // Chuyển sang View xem TKB
+                        renderTimetable();
+                    }, 500);
+                }
+            }, 200);
+        }
+
+        function executeAlgorithm() {
+            globalSchedule = []; // Reset TKB
+            
+            const days = ['t2','t3','t4','t5','t6','t7'];
+            const periods = ['s1','s2','s3','s4','s5'];
+            
+            const optDayOff = document.getElementById('ai-dayoff').checked;
+            const optNoConsecutive = document.getElementById('ai-noconsecutive').checked;
+
+            dbTeachers.forEach(teacher => {
+                // Ràng buộc 1: Cấp ngày nghỉ nếu tổng tiết <= 25 (Vì 6 ngày * 5 tiết = 30)
+                let teacherDayOff = null;
+                if (optDayOff && teacher.teachPeriods <= 25) {
+                    teacherDayOff = days[Math.floor(Math.random() * days.length)]; // Random cho nghỉ 1 ngày
+                }
+
+                teacher.teaching.forEach(task => {
+                    let periodsToAssign = task.prd;
+                    let attempts = 0;
+
+                    // Nhét tiết vào ô trống
+                    while (periodsToAssign > 0 && attempts < 1000) {
+                        // Random chọn 1 ô
+                        let randDay = days[Math.floor(Math.random() * days.length)];
+                        let randPeriod = periods[Math.floor(Math.random() * periods.length)];
+
+                        // Bỏ qua nếu rơi vào ngày nghỉ của GV
+                        if (randDay === teacherDayOff) { attempts++; continue; }
+
+                        // Kiểm tra xung đột (Trùng lịch)
+                        let isTeacherBusy = globalSchedule.some(s => s.teacher === teacher.name && s.day === randDay && s.period === randPeriod);
+                        let isClassBusy = globalSchedule.some(s => s.cls === task.cls && s.day === randDay && s.period === randPeriod);
+
+                        // Ràng buộc 2: Không xếp 2 tiết liền nhau cho 1 môn
+                        let consecutiveConflict = false;
+                        if (optNoConsecutive) {
+                            let pIndex = periods.indexOf(randPeriod);
+                            let pPrev = pIndex > 0 ? periods[pIndex-1] : null;
+                            let pNext = pIndex < periods.length - 1 ? periods[pIndex+1] : null;
+
+                            if (pPrev && globalSchedule.some(s => s.cls === task.cls && s.day === randDay && s.period === pPrev && s.subject === task.sub)) consecutiveConflict = true;
+                            if (pNext && globalSchedule.some(s => s.cls === task.cls && s.day === randDay && s.period === pNext && s.subject === task.sub)) consecutiveConflict = true;
+                        }
+
+                        // Nếu thỏa mãn mọi điều kiện -> Ghi vào CSDL TKB
+                        if (!isTeacherBusy && !isClassBusy && !consecutiveConflict) {
+                            globalSchedule.push({
+                                day: randDay,
+                                period: randPeriod,
+                                teacher: teacher.name,
+                                subject: task.sub,
+                                cls: task.cls,
+                                type: task.sub.includes('HĐTN') ? 'hdtn' : 'normal'
+                            });
+                            periodsToAssign--; // Giảm đi 1 tiết cần xếp
+                        }
+                        attempts++; // Tránh loop vô hạn nếu nhập quá lố số tiết
+                    }
+                });
             });
         }
 
+        // --- 4. RENDER TKB RA BẢNG HTML ---
+        function renderTimetable() {
+            const selectedClass = document.getElementById('class-filter').value;
+            const tbody = document.getElementById('tkb-body');
+            const days = ['t2', 't3', 't4', 't5', 't6', 't7'];
+            let html = '';
+            
+            for (let i = 1; i <= 5; i++) {
+                html += `<tr>`;
+                if(i==1) html += `<td rowspan="5" class="border-b border-r font-bold text-gray-700 bg-white sticky-col" style="writing-mode: vertical-rl">SÁNG</td>`;
+                html += `<td class="border-b border-r bg-gray-50 sticky-col" style="left:64px;">Tiết ${i}</td>`;
+                
+                days.forEach(day => {
+                    // Lọc tìm tiết học của LỚP ĐƯỢC CHỌN tại Ô (Ngày, Tiết) tương ứng
+                    const cellData = globalSchedule.find(s => s.cls === selectedClass && s.day === day && s.period === `s${i}`);
+                    
+                    if (cellData) {
+                        let bgClass = cellData.type === 'hdtn' ? 'bg-subject-hdtn' : 'bg-subject-normal';
+                        html += `<td class="border-b border-r p-1">
+                            <div class="${bgClass} rounded p-2 text-left h-full shadow-sm">
+                                <div class="font-bold text-gray-800 text-xs">${cellData.subject}</div>
+                                <div class="text-[11px] text-gray-600 mt-1"><i class="fa-solid fa-user-tie"></i> ${cellData.teacher}</div>
+                            </div>
+                        </td>`;
+                    } else {
+                        html += `<td class="border-b border-r p-1"></td>`; // Ô trống
+                    }
+                });
+                html += `</tr>`;
+            }
+            tbody.innerHTML = html;
+        }
+
+        // Tiện ích Toast
         function showToast(msg, type="error") {
             const t = document.getElementById('toast');
             document.getElementById('toast-msg').innerText = msg;
@@ -380,13 +408,24 @@
             setTimeout(() => t.classList.add('translate-y-20', 'opacity-0'), 2500);
         }
 
-        // Khởi tạo
-        window.onload = () => {
-            renderTimetable();
-            renderDepartments(); 
-            addTeachingRow();
+        // Tạo dữ liệu giả để Test nhanh
+        function mockData() {
+            dbTeachers = [
+                {id: 1, name: "Nguyễn Văn Toán", teachPeriods: 10, total: 10, teaching: [
+                    {sub: "Toán", cls: "10A1", prd: 5}, {sub: "Toán", cls: "10A2", prd: 5}
+                ]},
+                {id: 2, name: "Trần Thị Văn", teachPeriods: 8, total: 12, teaching: [
+                    {sub: "Ngữ văn", cls: "10A1", prd: 4}, {sub: "Ngữ văn", cls: "10A2", prd: 4}
+                ]},
+                {id: 3, name: "Lê Hóa", teachPeriods: 4, total: 4, teaching: [
+                    {sub: "Hóa học", cls: "10A1", prd: 2}, {sub: "Hóa học", cls: "10A2", prd: 2}
+                ]}
+            ];
             renderTeachersTable();
-        };
+            showToast("Đã tạo 3 Giáo viên mẫu!", "success");
+        }
+
+        window.onload = () => { renderTimetable(); addTeachingRow(); };
     </script>
 </body>
 </html>
