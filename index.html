@@ -182,6 +182,27 @@
                     </div>
 
                     <div id="mode-auto-settings" class="space-y-4">
+                        <div class="p-3 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg text-sm transition">
+                            <label class="flex items-start cursor-pointer text-green-900">
+                                <input type="checkbox" id="ai-compact" checked class="mt-0.5 mr-2 rounded text-green-600 focus:ring-green-500"> 
+                                <div>
+                                    <span class="font-bold">Xếp liên tục từ tiết 1</span>
+                                    <p class="text-[11px] text-green-700 mt-1 leading-tight">Lớp học không có tiết trống, luôn bắt đầu từ tiết 1.</p>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <!-- TÍNH NĂNG MỚI: ĐỒNG BỘ THEO KHỐI -->
+                        <div class="p-3 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg text-sm transition">
+                            <label class="flex items-start cursor-pointer text-purple-900">
+                                <input type="checkbox" id="ai-sync-grade" checked class="mt-0.5 mr-2 rounded text-purple-600 focus:ring-purple-500"> 
+                                <div>
+                                    <span class="font-bold">Đồng bộ tiết theo Khối</span>
+                                    <p class="text-[11px] text-purple-700 mt-1 leading-tight">Các lớp trong cùng khối (VD: 10A1, 10A2) sẽ có cùng số tiết trong mỗi buổi.</p>
+                                </div>
+                            </label>
+                        </div>
+                        
                         <div class="p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm">
                             <label class="flex items-start cursor-pointer text-blue-900">
                                 <input type="checkbox" checked disabled class="mt-0.5 mr-2 rounded text-blue-600"> 
@@ -273,7 +294,7 @@
         </div>
     </main>
 
-    <!-- HỘP THOẠI XUẤT FILE IN (Rút gọn) -->
+    <!-- HỘP THOẠI XUẤT FILE IN -->
     <div id="export-modal" class="view-hidden fixed inset-0 z-40 items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="export-title" onclick="if (event.target === this) closeExportModal()">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
             <div class="flex items-center justify-between mb-5">
@@ -305,11 +326,8 @@
         let isScheduling = false;
         let idCounter = 0;
         let toastTimer = null;
-        
-        // Cờ lưu vết để biết đang Sửa hay Thêm mới
         let editingTeacherId = null;
 
-        // --- TIỆN ÍCH ---
         const $ = id => document.getElementById(id);
         function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
         function newCellId() { idCounter++; return `cell_${Date.now()}_${idCounter}`; }
@@ -317,13 +335,12 @@
         function slotLabel(d, p) { return `Thứ ${d.slice(1)}, tiết ${p.slice(1)}`; }
         function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
 
-        // --- LOCAL STORAGE ---
         function saveDataToStorage() {
             try {
                 localStorage.setItem('tkb_teachers', JSON.stringify(dbTeachers));
                 localStorage.setItem('tkb_schedule', JSON.stringify(globalSchedule));
                 localStorage.setItem('tkb_departments', JSON.stringify(dbDepartments));
-            } catch (e) { console.warn('Không lưu được vào localStorage:', e); }
+            } catch (e) {}
         }
 
         function loadDataFromStorage() {
@@ -338,13 +355,11 @@
             if (confirm("CẢNH BÁO: Hành động này sẽ xóa vĩnh viễn toàn bộ Giáo viên và Thời khóa biểu hiện tại. Bạn có chắc chắn không?")) {
                 try { ['tkb_teachers', 'tkb_schedule', 'tkb_departments'].forEach(k => localStorage.removeItem(k)); } catch (e) {}
                 dbTeachers = []; globalSchedule = []; lastReport = null; dbDepartments = [...DEFAULT_DEPTS];
-                cancelEdit();
-                renderDepartments(); renderTeachersTable(); renderScheduleReport();
+                cancelEdit(); renderDepartments(); renderTeachersTable(); renderScheduleReport();
                 showToast("Đã dọn dẹp sạch sẽ Hệ thống!", "success");
             }
         }
 
-        // --- CHUYỂN TRANG ---
         function switchView(viewName) {
             document.querySelectorAll('.menu-item').forEach(el => {
                 const active = el.id === `menu-${viewName}`;
@@ -356,13 +371,10 @@
 
             ['data-entry', 'timetable'].forEach(v => {
                 const el = $(`view-${v}`), show = v === viewName;
-                el.classList.toggle('view-hidden', !show);
-                el.classList.toggle('flex', show);
+                el.classList.toggle('view-hidden', !show); el.classList.toggle('flex', show);
             });
             $('topbar-title').innerText = viewName === 'timetable' ? 'Không gian Xếp Thời Khóa Biểu' : 'Quản lý Dữ liệu Phân công';
-
-            if (viewName === 'timetable') updateFilterDropdown();
-            else renderDataSummary();
+            if (viewName === 'timetable') updateFilterDropdown(); else renderDataSummary();
         }
 
         function setMode(mode) {
@@ -379,18 +391,15 @@
             }
         }
 
-        // --- NHẬP DỮ LIỆU & CHỈNH SỬA ---
         function renderDepartments() {
-            const select = $('gv_dept');
-            select.innerHTML = dbDepartments.map(dept => `<option value="${esc(dept)}">${esc(dept)}</option>`).join('');
+            $('gv_dept').innerHTML = dbDepartments.map(dept => `<option value="${esc(dept)}">${esc(dept)}</option>`).join('');
         }
+        
         function addNewDept() {
             const newDept = prompt("Nhập tên Tổ chuyên môn mới (VD: Tổ Thể dục - QP):");
-            if (newDept && newDept.trim() !== "") {
-                if (!dbDepartments.includes(newDept.trim())) {
-                    dbDepartments.push(newDept.trim()); saveDataToStorage(); renderDepartments();
-                    $('gv_dept').value = newDept.trim(); showToast("Đã thêm Tổ mới!", "success");
-                }
+            if (newDept && newDept.trim() !== "" && !dbDepartments.includes(newDept.trim())) {
+                dbDepartments.push(newDept.trim()); saveDataToStorage(); renderDepartments();
+                $('gv_dept').value = newDept.trim(); showToast("Đã thêm Tổ mới!", "success");
             }
         }
 
@@ -415,36 +424,23 @@
         function editTeacher(id) {
             const t = dbTeachers.find(x => x.id === id);
             if (!t) return;
-            
             editingTeacherId = id;
-            
-            // Fill thông tin chung
             $('gv_name').value = t.name;
             $('gv_dept').value = t.dept;
-            
-            // Xóa rỗng các ô kiêm nhiệm trước, sau đó điền lại
             document.querySelectorAll('input[name="kiem_nhiem"]').forEach(el => el.value = '');
             (t.duties || []).forEach(d => {
                 const input = document.querySelector(`input[name="kiem_nhiem"][data-name="${d.name}"]`);
                 if (input) input.value = d.period;
             });
-            
-            // Lên danh sách tiết dạy
             $('teaching_container').innerHTML = '';
-            if (!t.teaching || t.teaching.length === 0) {
-                addTeachingRow();
-            } else {
-                t.teaching.forEach(tc => addTeachingRow(tc.sub, tc.cls, tc.prd));
-            }
+            if (!t.teaching || t.teaching.length === 0) addTeachingRow();
+            else t.teaching.forEach(tc => addTeachingRow(tc.sub, tc.cls, tc.prd));
             
-            // Thay đổi giao diện nút lưu
             const btnSubmit = $('btn-submit-form');
             btnSubmit.innerHTML = '<i class="fa-solid fa-check mr-2"></i> CẬP NHẬT DỮ LIỆU';
             btnSubmit.classList.replace('bg-blue-600', 'bg-green-600');
             btnSubmit.classList.replace('hover:bg-blue-700', 'hover:bg-green-700');
             $('btn-cancel-edit').classList.remove('hidden');
-            
-            // Cuộn lên form
             $('dataForm').scrollIntoView({ behavior: 'smooth' });
         }
 
@@ -453,7 +449,6 @@
             $('dataForm').reset();
             $('teaching_container').innerHTML = '';
             addTeachingRow();
-            
             const btnSubmit = $('btn-submit-form');
             btnSubmit.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> LƯU DỮ LIỆU';
             btnSubmit.classList.replace('bg-green-600', 'bg-blue-600');
@@ -466,9 +461,8 @@
             const name = $('gv_name').value.trim();
             const dept = $('gv_dept').value;
 
-            // Kiểm tra trùng tên: Nếu đang thêm mới HOẶC nếu đang sửa nhưng đổi sang tên của người khác
             if (dbTeachers.some(t => t.name.toLowerCase() === name.toLowerCase() && t.id !== editingTeacherId)) {
-                return showToast("Đã có giáo viên trùng tên. Hãy thêm ký hiệu phân biệt (VD: Nguyễn Văn A - Toán).", "error");
+                return showToast("Đã có giáo viên trùng tên. Hãy thêm ký hiệu phân biệt.", "error");
             }
 
             let teachPeriods = 0, dutyPeriods = 0, teaching = [], dutiesList = [];
@@ -483,31 +477,22 @@
                 const p = parseInt(el.value) || 0;
                 if (p > 0) { dutyPeriods += p; dutiesList.push({ name: el.dataset.name, period: p }); }
             });
-            
             const total = teachPeriods + dutyPeriods;
 
             if (editingTeacherId) {
-                // Xử lý Cập nhật (Sửa)
                 const tIndex = dbTeachers.findIndex(x => x.id === editingTeacherId);
                 if (tIndex > -1) {
                     const oldName = dbTeachers[tIndex].name;
                     dbTeachers[tIndex] = { ...dbTeachers[tIndex], name, dept, duties: dutiesList, teaching, teachPeriods, dutyPeriods, total };
-                    
-                    // Nếu giáo viên đổi tên, cập nhật cả lưới TKB
-                    if (oldName !== name) {
-                        globalSchedule.forEach(s => { if (s.teacher === oldName) s.teacher = name; });
-                    }
+                    if (oldName !== name) globalSchedule.forEach(s => { if (s.teacher === oldName) s.teacher = name; });
                 }
                 showToast("Đã cập nhật thành công!", "success");
             } else {
-                // Xử lý Thêm mới
                 dbTeachers.push({ id: Date.now(), name, dept, duties: dutiesList, teaching, teachPeriods, dutyPeriods, total });
                 showToast("Lưu Dữ liệu thành công!", "success");
             }
 
-            cancelEdit();
-            saveDataToStorage(); 
-            renderTeachersTable();
+            cancelEdit(); saveDataToStorage(); renderTeachersTable();
         }
 
         function deleteTeacher(id) {
@@ -531,8 +516,6 @@
                     const colorClass = t.total > 17 ? "text-red-600" : (t.total < 17 ? "text-yellow-600" : "text-green-600");
                     const duties = (t.duties || []).map(d => `<span class="bg-yellow-100 text-xs px-2 py-1 border border-yellow-200 rounded mr-1 mb-1 inline-block">${esc(d.name)} <b class="text-blue-600">(+${esc(d.period)})</b></span>`).join('') || '<span class="text-gray-400 italic text-xs">Không có</span>';
                     const teaching = (t.teaching || []).map(tc => `<div class="mb-1 text-xs"><b>${esc(tc.sub)}</b> <i class="fa-solid fa-arrow-right text-[9px] mx-1 text-gray-400"></i> Lớp ${esc(tc.cls)} <span class="text-gray-500">(${esc(tc.prd)}t)</span></div>`).join('') || '<span class="text-gray-400 italic text-xs">Chưa có tiết dạy</span>';
-                    
-                    // NÚT SỬA ĐƯỢC THÊM VÀO ĐÂY
                     return `
                     <tr class="border-b hover:bg-blue-50 transition">
                         <td class="border p-2"><b>${esc(t.name)}</b><br><span class="text-[11px] text-gray-500">${esc(t.dept)}</span></td>
@@ -551,8 +534,7 @@
                     </tr>`;
                 }).join('');
             }
-            renderDataSummary();
-            updateFilterDropdown();
+            renderDataSummary(); updateFilterDropdown();
         }
 
         function renderDataSummary() {
@@ -564,16 +546,14 @@
             let status;
             if (!globalSchedule.length) status = 'Chưa xếp TKB.';
             else if (globalSchedule.length === needed) status = `Đã xếp đủ ${needed}/${needed} tiết.`;
-            else status = `TKB hiện có ${globalSchedule.length}/${needed} tiết, chưa khớp với dữ liệu. Bấm "Xếp TKB từ dữ liệu này" để cập nhật.`;
+            else status = `TKB hiện có ${globalSchedule.length}/${needed} tiết, chưa khớp với dữ liệu.`;
             el.textContent = `${classes.size} lớp, ${needed} tiết/tuần cần xếp. ${status}`;
         }
 
-        // --- XUẤT NHẬP EXCEL DỮ LIỆU ---
-
+        // --- XUẤT NHẬP EXCEL ---
         function exportDataExcel() {
             const data = [];
             if (dbTeachers.length === 0) {
-                // Xuất file mẫu trống
                 data.push({
                     "Giáo viên": "VD: Nguyễn Văn A", "Tổ chuyên môn": "Tổ Toán - Tin",
                     "GVCN": 4, "TT": 0, "PTT": 0, "BTĐ": 0, "PBTĐ": 0,
@@ -584,7 +564,6 @@
                 dbTeachers.forEach(t => {
                     const duties = {};
                     (t.duties || []).forEach(d => { duties[d.name] = d.period; });
-                    
                     if (!t.teaching || t.teaching.length === 0) {
                         data.push({
                             "Giáo viên": t.name, "Tổ chuyên môn": t.dept,
@@ -607,7 +586,6 @@
                     }
                 });
             }
-
             const ws = XLSX.utils.json_to_sheet(data);
             ws['!cols'] = [{wch:20}, {wch:18}, {wch:6}, {wch:6}, {wch:6}, {wch:6}, {wch:6}, {wch:15}, {wch:10}, {wch:10}, {wch:25}, {wch:25}];
             const wb = XLSX.utils.book_new();
@@ -619,56 +597,33 @@
         function importDataExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, {type: 'array'});
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-
-                    if (jsonData.length === 0) {
-                        showToast("File Excel trống!", "error");
-                        return;
-                    }
+                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                    if (jsonData.length === 0) return showToast("File Excel trống!", "error");
 
                     const teacherMap = new Map();
-
                     jsonData.forEach(row => {
                         const name = row["Giáo viên"];
                         if (!name || String(name).includes("VD:")) return; 
-
                         if (!teacherMap.has(name)) {
-                            teacherMap.set(name, {
-                                name: name, dept: row["Tổ chuyên môn"] || "Chưa phân tổ",
-                                duties: [], teaching: [], teachPeriods: 0, dutyPeriods: 0, total: 0
-                            });
+                            teacherMap.set(name, { name: name, dept: row["Tổ chuyên môn"] || "Chưa phân tổ", duties: [], teaching: [], teachPeriods: 0, dutyPeriods: 0, total: 0 });
                         }
                         const t = teacherMap.get(name);
-                        
                         ['GVCN', 'TT', 'PTT', 'BTĐ', 'PBTĐ'].forEach(dutyName => {
                             const val = parseInt(row[dutyName]) || 0;
-                            if (val > 0 && !t.duties.find(d => d.name === dutyName)) {
-                                t.duties.push({ name: dutyName, period: val });
-                                t.dutyPeriods += val;
-                            }
+                            if (val > 0 && !t.duties.find(d => d.name === dutyName)) { t.duties.push({ name: dutyName, period: val }); t.dutyPeriods += val; }
                         });
-
-                        const sub = row["Môn dạy"];
-                        const cls = String(row["Lớp dạy"] || "").toUpperCase().trim();
-                        const prd = parseInt(row["Số tiết"]) || 0;
-
-                        if (sub && cls && prd > 0) {
-                            t.teaching.push({ sub: sub, cls: cls, prd: prd });
-                            t.teachPeriods += prd;
-                        }
+                        const sub = row["Môn dạy"], cls = String(row["Lớp dạy"] || "").toUpperCase().trim(), prd = parseInt(row["Số tiết"]) || 0;
+                        if (sub && cls && prd > 0) { t.teaching.push({ sub, cls, prd }); t.teachPeriods += prd; }
                         t.total = t.teachPeriods + t.dutyPeriods;
                     });
 
                     const newTeachers = Array.from(teacherMap.values());
-                    if (newTeachers.length === 0) return showToast("Không tìm thấy dữ liệu hợp lệ trong file Excel.", "error");
-                    
+                    if (newTeachers.length === 0) return showToast("Không tìm thấy dữ liệu hợp lệ.", "error");
                     newTeachers.forEach((t, index) => t.id = Date.now() + index);
                     newTeachers.forEach(t => { if (t.dept && !dbDepartments.includes(t.dept)) dbDepartments.push(t.dept); });
 
@@ -676,43 +631,31 @@
                         dbTeachers = newTeachers; globalSchedule = []; 
                     } else {
                         newTeachers.forEach(nt => {
-                            const existing = dbTeachers.find(et => et.name === nt.name);
-                            if(existing) nt.name = nt.name + " (Mới)";
+                            if(dbTeachers.find(et => et.name === nt.name)) nt.name = nt.name + " (Mới)";
                             dbTeachers.push(nt);
                         });
                     }
-
                     saveDataToStorage(); renderDepartments(); renderTeachersTable();
                     showToast(`Nhập thành công ${newTeachers.length} Giáo viên!`, "success");
-                } catch (error) {
-                    console.error(error);
-                    showToast("Lỗi khi đọc file Excel. Định dạng không hợp lệ.", "error");
-                }
+                } catch (error) { showToast("Lỗi định dạng Excel.", "error"); }
                 event.target.value = ""; 
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // --- CÁC HÀM XẾP TKB ---
-        
+        // --- CÁC HÀM XẾP TKB CÓ THUẬT TOÁN THÔNG MINH ---
         function updateFilterDropdown() {
-            const viewType = $('view-type').value, sel =$('main-filter');
-            const currentSelection = sel.value;
-            const sorted = listEntities(viewType);
+            const viewType = $('view-type').value, sel = $('main-filter');
+            const currentSelection = sel.value, sorted = listEntities(viewType);
             sel.innerHTML = `<option value="">-- Chọn ${viewType === 'class' ? 'Lớp' : 'Giáo viên'} để xem --</option>` +
                 sorted.map(item => `<option value="${esc(item)}">${viewType === 'class' ? 'Lớp' : 'GV:'} ${esc(item)}</option>`).join('');
-
-            if (sorted.length > 0) {
-                if (currentSelection && sorted.includes(currentSelection)) sel.value = currentSelection;
-                else sel.selectedIndex = 1;
-            }
+            if (sorted.length > 0) { if (currentSelection && sorted.includes(currentSelection)) sel.value = currentSelection; else sel.selectedIndex = 1; }
             renderTimetable();
         }
 
         function scheduleFromData() {
             if (!buildLessons().length) return showToast("Chưa có tiết dạy nào để xếp.", "error");
-            switchView('timetable');
-            runAutoSchedule();
+            switchView('timetable'); runAutoSchedule();
         }
 
         function buildLessons() {
@@ -727,22 +670,34 @@
         function analyzeData(lessons) {
             const cap = DAYS.length * PERIODS.length;
             const cls = new Map(), tch = new Map(), warnings = [];
-            lessons.forEach(l => { cls.set(l.cls, (cls.get(l.cls) || 0) + 1); tch.set(l.teacher, (tch.get(l.teacher) || 0) + 1); });
-            cls.forEach((n, c) => { if (n > cap) warnings.push(`Lớp ${c} có ${n} tiết/tuần, vượt quá ${cap} ô sáng.`); });
-            tch.forEach((n, t) => { if (n > cap) warnings.push(`${t} dạy ${n} tiết/tuần, vượt quá ${cap} ô sáng.`); });
-            return { warnings, clsCount: cls, tchCount: tch };
+            const classesInGrade = {};
+            
+            lessons.forEach(l => { 
+                cls.set(l.cls, (cls.get(l.cls) || 0) + 1); 
+                tch.set(l.teacher, (tch.get(l.teacher) || 0) + 1); 
+                
+                // Nhận diện khối lớp (Ví dụ "10A1" -> "10")
+                const gradeMatch = l.cls.match(/^\d+/);
+                if (gradeMatch) {
+                    const grade = gradeMatch[0];
+                    if (!classesInGrade[grade]) classesInGrade[grade] = new Set();
+                    classesInGrade[grade].add(l.cls);
+                }
+            });
+            
+            cls.forEach((n, c) => { if (n > cap) warnings.push(`Lớp ${c} vượt quá ${cap} ô sáng.`); });
+            tch.forEach((n, t) => { if (n > cap) warnings.push(`${t} dạy vượt quá ${cap} ô sáng.`); });
+            return { warnings, clsCount: cls, tchCount: tch, classesInGrade };
         }
 
-        function attemptSchedule(baseLessons, opts, clsCount, tchCount) {
+        function attemptSchedule(baseLessons, opts, clsCount, tchCount, classesInGrade) {
             const key = (x, d, p) => `${x}|${d}|${p}`;
             const tSlot = new Map(), cSlot = new Map();
             const teacherDay = new Map(), classDay = new Map(), subjDay = new Map();
             const bump = (m, k, n) => m.set(k, (m.get(k) || 0) + n);
 
             const dayOff = new Map();
-            if (opts.dayOff) {
-                dbTeachers.forEach(t => { if ((t.teaching || []).length && (t.teachPeriods || 0) <= 25) dayOff.set(t.name, DAYS[Math.floor(Math.random() * DAYS.length)]); });
-            }
+            if (opts.dayOff) dbTeachers.forEach(t => { if ((t.teaching || []).length && (t.teachPeriods || 0) <= 25) dayOff.set(t.name, DAYS[Math.floor(Math.random() * DAYS.length)]); });
 
             const lessons = baseLessons.map(l => ({ ...l, day: null, period: null }));
 
@@ -765,12 +720,43 @@
             
             const scoreSlot = (L, d, p) => {
                 const idx = PERIODS.indexOf(p);
-                let holes = 0;
-                for (let i = 0; i < idx; i++) if (!cSlot.has(key(L.cls, d, PERIODS[i]))) holes++;
                 let sc = Math.random() * 2;
-                sc += 3 * (classDay.get(`${L.cls}|${d}`) || 0) + 2 * (teacherDay.get(`${L.teacher}|${d}`) || 0);
-                sc += 40 * (subjDay.get(`${L.cls}|${L.subject}|${d}`) || 0) + 4 * holes + 0.3 * idx;
+                sc += 3 * (classDay.get(`${L.cls}|${d}`) || 0) + 2 * (teacherDay.get(`${L.teacher}|${d}`) || 0) + 40 * (subjDay.get(`${L.cls}|${L.subject}|${d}`) || 0) + 0.3 * idx;
+                
+                if (!opts.compact) {
+                    let holes = 0;
+                    for (let i = 0; i < idx; i++) if (!cSlot.has(key(L.cls, d, PERIODS[i]))) holes++;
+                    sc += 4 * holes;
+                }
+                
                 if (opts.noConsec && adjacentSame(L, d, p)) sc += 1000;
+                
+                // THUẬT TOÁN ĐỒNG BỘ THEO KHỐI
+                if (opts.syncGrade) {
+                    const gradeMatch = L.cls.match(/^\d+/);
+                    if (gradeMatch) {
+                        const grade = gradeMatch[0];
+                        if (classesInGrade && classesInGrade[grade]) {
+                            const myCount = classDay.get(`${L.cls}|${d}`) || 0;
+                            let maxOtherCount = 0;
+                            
+                            classesInGrade[grade].forEach(c => {
+                                if (c !== L.cls) {
+                                    maxOtherCount = Math.max(maxOtherCount, classDay.get(`${c}|${d}`) || 0);
+                                }
+                            });
+                            
+                            // Bù đắp cho lớp đang ít tiết hơn các lớp khác trong khối vào ngày d
+                            if (myCount < maxOtherCount) {
+                                sc -= 15; // Rất tốt, nên xếp vào để theo kịp các lớp khác
+                            } else if (myCount > maxOtherCount) {
+                                sc += 15; // Xấu, không nên xếp vào làm vượt trội so với các lớp khác
+                            } else {
+                                sc += 5;  // Đang bằng nhau, xếp vào sẽ làm lệch
+                            }
+                        }
+                    }
+                }
                 return sc;
             };
 
@@ -779,7 +765,23 @@
             
             for (const L of order) {
                 let best = null, bestScore = Infinity;
-                for (const d of DAYS) for (const p of PERIODS) {
+                let candidateSlots = [];
+                
+                // THUẬT TOÁN XẾP LIÊN TỤC
+                if (opts.compact) {
+                    for (const d of DAYS) {
+                        for (const p of PERIODS) {
+                            if (!cSlot.has(key(L.cls, d, p))) { 
+                                candidateSlots.push([d, p]); 
+                                break; // Chỉ lấy tiết trống sớm nhất trong ngày của lớp
+                            }
+                        }
+                    }
+                } else {
+                    for (const d of DAYS) for (const p of PERIODS) candidateSlots.push([d, p]);
+                }
+
+                for (const [d, p] of candidateSlots) {
                     if (!isFree(L, d, p, false)) continue;
                     const sc = scoreSlot(L, d, p);
                     if (sc < bestScore) { bestScore = sc; best = [d, p]; }
@@ -789,6 +791,67 @@
 
             const allSlots = () => shuffle(DAYS.flatMap(d => PERIODS.map(p => [d, p])));
             const tryRepair = (L) => {
+                // SỬA LỖI ĐẢM BẢO TÍNH LIÊN TỤC
+                if (opts.compact) {
+                    const candidateSlots = [];
+                    for (const d of DAYS) {
+                        for (const p of PERIODS) {
+                            if (!cSlot.has(key(L.cls, d, p))) { candidateSlots.push([d, p]); break; }
+                        }
+                    }
+                    
+                    for (const [d, p] of shuffle(candidateSlots)) {
+                        if (isFree(L, d, p, true)) { place(L, d, p); return true; }
+                        if (d === dayOff.get(L.teacher)) continue;
+                        
+                        const B = tSlot.get(key(L.teacher, d, p));
+                        if (!B) continue;
+                        
+                        unplace(B);
+                        let repaired = false;
+                        
+                        // Phương án 1: Tráo đổi 1 tiết khác cùng lớp của B
+                        const bClassLessons = [];
+                        DAYS.forEach(d2 => PERIODS.forEach(p2 => {
+                            const X = cSlot.get(key(B.cls, d2, p2));
+                            if (X && X.id !== B.id) bClassLessons.push(X);
+                        }));
+                        
+                        for (const X of shuffle(bClassLessons)) {
+                            const dX = X.day, pX = X.period;
+                            unplace(X);
+                            if (isFree(B, dX, pX, false) && isFree(X, d, p, false)) {
+                                place(B, dX, pX); place(X, d, p); place(L, d, p);
+                                repaired = true; break;
+                            }
+                            place(X, dX, pX);
+                        }
+                        if (repaired) return true;
+                        
+                        // Phương án 2: Di chuyển tiết cuối cùng của ngày đó sang ngày khác
+                        const idx = PERIODS.indexOf(p);
+                        const isLast = (idx === PERIODS.length - 1) || !cSlot.has(key(B.cls, d, PERIODS[idx + 1]));
+                        if (isLast) {
+                            const bNextSlots = [];
+                            for (const d2 of DAYS) {
+                                for (const p2 of PERIODS) {
+                                    if (!cSlot.has(key(B.cls, d2, p2))) { bNextSlots.push([d2, p2]); break; }
+                                }
+                            }
+                            for (const [d2, p2] of shuffle(bNextSlots)) {
+                                if (isFree(B, d2, p2, false)) {
+                                    place(B, d2, p2); place(L, d, p);
+                                    repaired = true; break;
+                                }
+                            }
+                            if (repaired) return true;
+                        }
+                        place(B, d, p);
+                    }
+                    return false;
+                }
+
+                // Sửa lỗi xếp thông thường
                 for (const [d, p] of allSlots()) if (isFree(L, d, p, true)) { place(L, d, p); return true; }
                 for (const [d, p] of allSlots()) {
                     const tb = tSlot.get(key(L.teacher, d, p)), cb = cSlot.get(key(L.cls, d, p));
@@ -830,21 +893,29 @@
 
             setMode('auto');
             const info = analyzeData(lessons);
-            const opts = { dayOff: $('ai-dayoff').checked, noConsec:$('ai-noconsecutive').checked };
+            const opts = { 
+                dayOff: $('ai-dayoff').checked, 
+                noConsec: $('ai-noconsecutive').checked,
+                compact: $('ai-compact') ?$('ai-compact').checked : false,
+                syncGrade: $('ai-sync-grade') ?$('ai-sync-grade').checked : false
+            };
+            
             const bar = $('ai-bar'), pct =$('ai-percent');
             isScheduling = true;
             $('schedule-report').classList.add('hidden');
             bar.style.width = '0%'; pct.innerText = '0%';
             setSchedulingUI(true);
 
-            const MAX_ATTEMPTS = 25, LIMIT_MS = 1500, t0 = performance.now();
+            const MAX_ATTEMPTS = (opts.compact || opts.syncGrade) ? 45 : 25; 
+            const LIMIT_MS = (opts.compact || opts.syncGrade) ? 3000 : 1500;
+            const t0 = performance.now();
             let attempts = 0, best = null;
 
             const step = () => {
                 try {
                     const sliceStart = performance.now();
                     do {
-                        const r = attemptSchedule(lessons, opts, info.clsCount, info.tchCount);
+                        const r = attemptSchedule(lessons, opts, info.clsCount, info.tchCount, info.classesInGrade);
                         attempts++;
                         if (!best || r.quality < best.quality) best = r;
                     } while (attempts < MAX_ATTEMPTS && performance.now() - sliceStart < 40 && best.quality >= 1);
