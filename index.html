@@ -40,11 +40,11 @@
             <h1 class="text-xl font-bold font-mono tracking-wider hidden lg:block text-yellow-300">TKB PRO</h1>
         </div>
         <nav class="flex-1 py-4 space-y-2 overflow-y-auto px-2 lg:px-4">
-            <a href="#" onclick="switchView('data-entry')" id="menu-data-entry" class="menu-item flex items-center justify-center lg:justify-start p-3 rounded bg-blue-800 font-semibold transition group">
+            <a href="#" onclick="event.preventDefault(); switchView('data-entry')" id="menu-data-entry" class="menu-item flex items-center justify-center lg:justify-start p-3 rounded bg-blue-800 font-semibold transition group">
                 <i class="fa-solid fa-database text-xl w-6 text-center text-yellow-300"></i>
                 <span class="hidden lg:block ml-3 text-yellow-300">Nhập Dữ Liệu</span>
             </a>
-            <a href="#" onclick="switchView('timetable')" id="menu-timetable" class="menu-item flex items-center justify-center lg:justify-start p-3 rounded hover:bg-blue-800 transition group">
+            <a href="#" onclick="event.preventDefault(); switchView('timetable')" id="menu-timetable" class="menu-item flex items-center justify-center lg:justify-start p-3 rounded hover:bg-blue-800 transition group">
                 <i class="fa-solid fa-table text-xl w-6 text-center"></i>
                 <span class="hidden lg:block ml-3">Không gian TKB</span>
             </a>
@@ -214,7 +214,7 @@
                                 <input type="checkbox" id="ai-dayoff" checked class="mt-0.5 mr-2 rounded text-blue-600 focus:ring-blue-500"> 
                                 <div>
                                     <span class="font-semibold">Nghỉ ngẫu nhiên 1 ngày/tuần</span>
-                                    <p class="text-[11px] text-gray-500 mt-1 leading-tight">Dành cho GV có tổng tiết dạy <= 25.</p>
+                                    <p class="text-[11px] text-gray-500 mt-1 leading-tight">Dành cho GV có tổng tiết dạy &le; 25.</p>
                                 </div>
                             </label>
                         </div>
@@ -294,20 +294,52 @@
         </div>
     </main>
 
-    <!-- HỘP THOẠI XUẤT FILE IN -->
-    <div id="export-modal" class="view-hidden fixed inset-0 z-40 items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="export-title" onclick="if (event.target === this) closeExportModal()">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-            <div class="flex items-center justify-between mb-5">
-                <h3 id="export-title" class="text-lg font-bold text-gray-800"><i class="fa-solid fa-file-export mr-2 text-green-600"></i>Tính năng xuất TKB</h3>
+    <!-- HỘP THOẠI XUẤT TKB -->
+    <div id="export-modal" class="view-hidden fixed inset-0 z-[60] items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="export-title" onclick="if (event.target === this) closeExportModal()">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 max-h-full overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h3 id="export-title" class="text-lg font-bold text-gray-800"><i class="fa-solid fa-file-export mr-2 text-green-600"></i>Xuất Thời khóa biểu</h3>
                 <button type="button" onclick="closeExportModal()" class="text-gray-400 hover:text-gray-600" aria-label="Đóng"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <p class="text-sm text-gray-600 mb-4">Chức năng xuất file In (Word/Excel lưới TKB) phức tạp được thu gọn trong bản xem thử này. Hãy sử dụng mã nguồn file cũ nếu cần xuất file .docx.</p>
+
+            <p class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">1. Nội dung xuất</p>
+            <div class="space-y-2 text-sm mb-5">
+                <label class="flex items-start gap-2 p-2.5 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="exp-scope" value="current" checked class="mt-1">
+                    <span><b>TKB đang xem</b><span id="exp-current-label" class="block text-xs text-gray-500"></span></span>
+                </label>
+                <label class="flex items-start gap-2 p-2.5 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="exp-scope" value="all-class" class="mt-1">
+                    <span><b>Tất cả các lớp</b><span class="block text-xs text-gray-500">Mỗi lớp một sheet (Excel) / một trang (Word, PDF)</span></span>
+                </label>
+                <label class="flex items-start gap-2 p-2.5 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="exp-scope" value="all-teacher" class="mt-1">
+                    <span><b>Tất cả giáo viên</b><span class="block text-xs text-gray-500">Mỗi giáo viên một sheet (Excel) / một trang (Word, PDF)</span></span>
+                </label>
+                <label class="flex items-start gap-2 p-2.5 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="exp-scope" value="sum-teacher" class="mt-1">
+                    <span><b>Tổng hợp tất cả giáo viên trên 1 trang / 1 sheet</b><span class="block text-xs text-gray-500">Mỗi giáo viên một dòng, 30 ô tiết (Thứ 2 – Thứ 7), ô ghi tên lớp</span></span>
+                </label>
+                <label class="flex items-start gap-2 p-2.5 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="exp-scope" value="sum-class" class="mt-1">
+                    <span><b>Tổng hợp tất cả các lớp trên 1 trang / 1 sheet</b><span class="block text-xs text-gray-500">Mỗi lớp một dòng, 30 ô tiết, ô ghi ký hiệu môn</span></span>
+                </label>
+            </div>
+
+            <p class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">2. Định dạng file</p>
+            <div class="grid grid-cols-3 gap-2 text-sm mb-2">
+                <label class="flex items-center justify-center gap-2 p-2.5 border rounded-lg cursor-pointer hover:bg-gray-50"><input type="radio" name="exp-format" value="xlsx" checked><i class="fa-solid fa-file-excel text-green-600"></i>Excel</label>
+                <label class="flex items-center justify-center gap-2 p-2.5 border rounded-lg cursor-pointer hover:bg-gray-50"><input type="radio" name="exp-format" value="word"><i class="fa-solid fa-file-word text-blue-600"></i>Word</label>
+                <label class="flex items-center justify-center gap-2 p-2.5 border rounded-lg cursor-pointer hover:bg-gray-50"><input type="radio" name="exp-format" value="print"><i class="fa-solid fa-print text-gray-600"></i>In / PDF</label>
+            </div>
+            <p class="text-[11px] text-gray-500 mb-5">Word: tải file .doc (khổ A4 ngang), mở bằng Word hoặc LibreOffice. In / PDF: mở hộp thoại in của trình duyệt, chọn “Lưu dưới dạng PDF” nếu cần file PDF.</p>
+
             <div class="flex justify-end gap-2">
                 <button type="button" onclick="closeExportModal()" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition">Đóng</button>
+                <button type="button" onclick="runExport()" class="px-4 py-2 rounded-lg bg-green-600 text-white font-bold hover:bg-green-700 transition shadow-sm"><i class="fa-solid fa-download mr-2"></i>Xuất file</button>
             </div>
         </div>
     </div>
-
     <!-- TOAST ALERT -->
     <div id="toast" class="fixed bottom-4 right-4 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-[70] flex items-center gap-3">
         <i class="fa-solid fa-circle-check text-xl"></i><span id="toast-msg" class="font-medium"></span>
@@ -331,7 +363,7 @@
         const $ = id => document.getElementById(id);
         function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
         function newCellId() { idCounter++; return `cell_${Date.now()}_${idCounter}`; }
-        function isHdtnSubject(sub) { return sub.includes('HĐTN') || sub.includes('GD '); }
+        function isHdtnSubject(sub) { return /HĐTN|HDTN|GDĐP|GDDP|^GD\s/i.test(String(sub ?? '').trim()); }
         function slotLabel(d, p) { return `Thứ ${d.slice(1)}, tiết ${p.slice(1)}`; }
         function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
 
@@ -425,6 +457,7 @@
             const t = dbTeachers.find(x => x.id === id);
             if (!t) return;
             editingTeacherId = id;
+            if (t.dept && !dbDepartments.includes(t.dept)) { dbDepartments.push(t.dept); saveDataToStorage(); renderDepartments(); }
             $('gv_name').value = t.name;
             $('gv_dept').value = t.dept;
             document.querySelectorAll('input[name="kiem_nhiem"]').forEach(el => el.value = '');
@@ -480,13 +513,16 @@
             const total = teachPeriods + dutyPeriods;
 
             if (editingTeacherId) {
+                let removed = 0;
                 const tIndex = dbTeachers.findIndex(x => x.id === editingTeacherId);
                 if (tIndex > -1) {
                     const oldName = dbTeachers[tIndex].name;
                     dbTeachers[tIndex] = { ...dbTeachers[tIndex], name, dept, duties: dutiesList, teaching, teachPeriods, dutyPeriods, total };
                     if (oldName !== name) globalSchedule.forEach(s => { if (s.teacher === oldName) s.teacher = name; });
+                    removed = reconcileScheduleForTeacher(dbTeachers[tIndex]);
+                    if (removed) { lastReport = null; renderScheduleReport(); }
                 }
-                showToast("Đã cập nhật thành công!", "success");
+                showToast(removed ? `Đã cập nhật. Đã gỡ ${removed} tiết khỏi TKB do phân công thay đổi - hãy xếp lại TKB.` : "Đã cập nhật thành công!", "success");
             } else {
                 dbTeachers.push({ id: Date.now(), name, dept, duties: dutiesList, teaching, teachPeriods, dutyPeriods, total });
                 showToast("Lưu Dữ liệu thành công!", "success");
@@ -495,12 +531,29 @@
             cancelEdit(); saveDataToStorage(); renderTeachersTable();
         }
 
+        // Gỡ khỏi TKB những tiết không còn khớp với phân công hiện tại của GV (đổi lớp/môn/giảm số tiết). Trả về số tiết đã gỡ.
+        function reconcileScheduleForTeacher(t) {
+            const allowed = new Map(), used = new Map();
+            (t.teaching || []).forEach(tc => { const k = `${tc.sub}|${tc.cls}`; allowed.set(k, (allowed.get(k) || 0) + (parseInt(tc.prd) || 0)); });
+            const before = globalSchedule.length;
+            globalSchedule = globalSchedule.filter(s => {
+                if (s.teacher !== t.name) return true;
+                const k = `${s.subject}|${s.cls}`, n = (used.get(k) || 0) + 1;
+                if (n > (allowed.get(k) || 0)) return false;
+                used.set(k, n); return true;
+            });
+            return before - globalSchedule.length;
+        }
+
         function deleteTeacher(id) {
             const t = dbTeachers.find(x => x.id === id);
             if (!t) return;
+            const n = globalSchedule.filter(s => s.teacher === t.name).length;
+            if (!confirm(`Xóa giáo viên "${t.name}"${n ? ` và ${n} tiết của giáo viên này trong TKB` : ''}?`)) return;
             dbTeachers = dbTeachers.filter(x => x.id !== id);
             globalSchedule = globalSchedule.filter(s => s.teacher !== t.name);
             if (editingTeacherId === id) cancelEdit();
+            if (n) { lastReport = null; renderScheduleReport(); }
             saveDataToStorage(); renderTeachersTable();
         }
 
@@ -551,7 +604,14 @@
         }
 
         // --- XUẤT NHẬP EXCEL ---
+        function requireXlsx() {
+            if (typeof XLSX !== 'undefined') return true;
+            showToast("Chưa tải được thư viện Excel (cần Internet). Hãy kiểm tra kết nối rồi tải lại trang.", "error");
+            return false;
+        }
+
         function exportDataExcel() {
+            if (!requireXlsx()) return;
             const data = [];
             if (dbTeachers.length === 0) {
                 data.push({
@@ -597,6 +657,7 @@
         function importDataExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
+            if (!requireXlsx()) { event.target.value = ""; return; }
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
@@ -607,8 +668,8 @@
 
                     const teacherMap = new Map();
                     jsonData.forEach(row => {
-                        const name = row["Giáo viên"];
-                        if (!name || String(name).includes("VD:")) return; 
+                        const name = String(row["Giáo viên"] ?? "").trim();
+                        if (!name || name.includes("VD:")) return; 
                         if (!teacherMap.has(name)) {
                             teacherMap.set(name, { name: name, dept: row["Tổ chuyên môn"] || "Chưa phân tổ", duties: [], teaching: [], teachPeriods: 0, dutyPeriods: 0, total: 0 });
                         }
@@ -617,7 +678,7 @@
                             const val = parseInt(row[dutyName]) || 0;
                             if (val > 0 && !t.duties.find(d => d.name === dutyName)) { t.duties.push({ name: dutyName, period: val }); t.dutyPeriods += val; }
                         });
-                        const sub = row["Môn dạy"], cls = String(row["Lớp dạy"] || "").toUpperCase().trim(), prd = parseInt(row["Số tiết"]) || 0;
+                        const sub = String(row["Môn dạy"] ?? "").trim(), cls = String(row["Lớp dạy"] || "").toUpperCase().trim(), prd = parseInt(row["Số tiết"]) || 0;
                         if (sub && cls && prd > 0) { t.teaching.push({ sub, cls, prd }); t.teachPeriods += prd; }
                         t.total = t.teachPeriods + t.dutyPeriods;
                     });
@@ -628,14 +689,17 @@
                     newTeachers.forEach(t => { if (t.dept && !dbDepartments.includes(t.dept)) dbDepartments.push(t.dept); });
 
                     if (confirm("GHI ĐÈ (Xóa hết dữ liệu và TKB cũ) hay THÊM VÀO (Giữ dữ liệu hiện tại)?\n\n- OK: Ghi đè toàn bộ.\n- Hủy (Cancel): Thêm vào cuối.")) {
-                        dbTeachers = newTeachers; globalSchedule = []; 
+                        dbTeachers = newTeachers; globalSchedule = []; lastReport = null; cancelEdit();
                     } else {
+                        const taken = new Set(dbTeachers.map(x => x.name.toLowerCase()));
                         newTeachers.forEach(nt => {
-                            if(dbTeachers.find(et => et.name === nt.name)) nt.name = nt.name + " (Mới)";
+                            let nm = nt.name, k = 0;
+                            while (taken.has(nm.toLowerCase())) { k++; nm = `${nt.name} (Mới${k > 1 ? ' ' + k : ''})`; }
+                            nt.name = nm; taken.add(nm.toLowerCase());
                             dbTeachers.push(nt);
                         });
                     }
-                    saveDataToStorage(); renderDepartments(); renderTeachersTable();
+                    saveDataToStorage(); renderDepartments(); renderTeachersTable(); renderScheduleReport();
                     showToast(`Nhập thành công ${newTeachers.length} Giáo viên!`, "success");
                 } catch (error) { showToast("Lỗi định dạng Excel.", "error"); }
                 event.target.value = ""; 
@@ -791,60 +855,53 @@
 
             const allSlots = () => shuffle(DAYS.flatMap(d => PERIODS.map(p => [d, p])));
             const tryRepair = (L) => {
-                // SỬA LỖI ĐẢM BẢO TÍNH LIÊN TỤC
                 if (opts.compact) {
+                    // Mỗi ngày lớp chỉ có 1 ô hợp lệ: tiết trống sớm nhất (để lớp luôn học liên tục từ tiết 1)
                     const candidateSlots = [];
                     for (const d of DAYS) {
                         for (const p of PERIODS) {
                             if (!cSlot.has(key(L.cls, d, p))) { candidateSlots.push([d, p]); break; }
                         }
                     }
-                    
+
                     for (const [d, p] of shuffle(candidateSlots)) {
                         if (isFree(L, d, p, true)) { place(L, d, p); return true; }
-                        if (d === dayOff.get(L.teacher)) continue;
-                        
+
+                        // GV đang bận ở ô này vì dạy lớp khác (B) -> thử dời B sang chỗ khác
                         const B = tSlot.get(key(L.teacher, d, p));
                         if (!B) continue;
-                        
                         unplace(B);
-                        let repaired = false;
-                        
-                        // Phương án 1: Tráo đổi 1 tiết khác cùng lớp của B
+
+                        // Phương án 1: tráo B với một tiết X khác của cùng lớp B (lớp B giữ nguyên số ô, không sinh tiết trống)
                         const bClassLessons = [];
                         DAYS.forEach(d2 => PERIODS.forEach(p2 => {
                             const X = cSlot.get(key(B.cls, d2, p2));
-                            if (X && X.id !== B.id) bClassLessons.push(X);
+                            if (X && X !== B) bClassLessons.push(X);
                         }));
-                        
                         for (const X of shuffle(bClassLessons)) {
                             const dX = X.day, pX = X.period;
                             unplace(X);
-                            if (isFree(B, dX, pX, false) && isFree(X, d, p, false)) {
+                            // X.teacher khác L.teacher để L và X không cùng ô một lúc
+                            if (X.teacher !== L.teacher && isFree(B, dX, pX, false) && isFree(X, d, p, false)) {
                                 place(B, dX, pX); place(X, d, p); place(L, d, p);
-                                repaired = true; break;
+                                return true;
                             }
                             place(X, dX, pX);
                         }
-                        if (repaired) return true;
-                        
-                        // Phương án 2: Di chuyển tiết cuối cùng của ngày đó sang ngày khác
+
+                        // Phương án 2: nếu B là tiết cuối ngày của lớp B thì chuyển B sang ô trống sớm nhất của ngày khác
                         const idx = PERIODS.indexOf(p);
                         const isLast = (idx === PERIODS.length - 1) || !cSlot.has(key(B.cls, d, PERIODS[idx + 1]));
                         if (isLast) {
-                            const bNextSlots = [];
-                            for (const d2 of DAYS) {
-                                for (const p2 of PERIODS) {
-                                    if (!cSlot.has(key(B.cls, d2, p2))) { bNextSlots.push([d2, p2]); break; }
+                            for (const d2 of shuffle(DAYS.slice())) {
+                                if (d2 === d) continue;
+                                const p2 = PERIODS.find(q => !cSlot.has(key(B.cls, d2, q)));
+                                if (p2 && isFree(B, d2, p2, false)) {
+                                    place(B, d2, p2);
+                                    if (isFree(L, d, p, true)) { place(L, d, p); return true; }
+                                    unplace(B);
                                 }
                             }
-                            for (const [d2, p2] of shuffle(bNextSlots)) {
-                                if (isFree(B, d2, p2, false)) {
-                                    place(B, d2, p2); place(L, d, p);
-                                    repaired = true; break;
-                                }
-                            }
-                            if (repaired) return true;
                         }
                         place(B, d, p);
                     }
@@ -855,7 +912,7 @@
                 for (const [d, p] of allSlots()) if (isFree(L, d, p, true)) { place(L, d, p); return true; }
                 for (const [d, p] of allSlots()) {
                     const tb = tSlot.get(key(L.teacher, d, p)), cb = cSlot.get(key(L.cls, d, p));
-                    if (tb && cb) continue;
+                    if (tb && cb && tb !== cb) continue;
                     const B = tb || cb;
                     unplace(B);
                     for (const [d2, p2] of allSlots()) {
@@ -945,7 +1002,7 @@
                 warnings: info.warnings, missing: Array.from(missing.entries()).map(([k, n]) => { const [t, s, c] = k.split('|'); return `${t} - Lớp ${c}: thiếu ${n} tiết`; })
             };
 
-            $('ai-bar').style.width = '100\%';$('ai-percent').innerText = '100%';
+            $('ai-bar').style.width = '100%';$('ai-percent').innerText = '100%';
             setTimeout(() => {
                 isScheduling = false; setSchedulingUI(false); $('ai-bar').style.width = '0%';
                 renderScheduleReport(); renderDataSummary(); updateFilterDropdown();
@@ -1043,6 +1100,10 @@
         }
 
         function mockData() {
+            if (dbTeachers.length && !confirm("Tạo GV mẫu sẽ THAY THẾ toàn bộ dữ liệu giáo viên và TKB hiện tại. Tiếp tục?")) return;
+            cancelEdit();
+            ['Tổ Toán - Tin', 'Tổ Ngữ văn'].forEach(d => { if (!dbDepartments.includes(d)) dbDepartments.push(d); });
+            renderDepartments();
             dbTeachers = [
                 { id: 1, name: "Thầy Toán 1", dept: "Tổ Toán - Tin", duties: [{ name: "GVCN", period: 4 }], teaching: [{ sub: "Toán", cls: "10A1", prd: 4 }, { sub: "Toán", cls: "10A2", prd: 4 }], teachPeriods: 8, dutyPeriods: 4, total: 12 },
                 { id: 2, name: "Cô Văn 1", dept: "Tổ Ngữ văn", duties: [{ name: "BTĐ", period: 6 }], teaching: [{ sub: "Ngữ văn", cls: "10A1", prd: 4 }, { sub: "Ngữ văn", cls: "10A2", prd: 4 }, { sub: "HĐTN-HN", cls: "10A1", prd: 2 }], teachPeriods: 10, dutyPeriods: 6, total: 16 }
@@ -1058,12 +1119,270 @@
             return Array.from(items).sort(new Intl.Collator('vi', { numeric: true }).compare);
         }
 
-        function openExportModal() { 
+        // =====================================================================
+        // XUẤT THỜI KHÓA BIỂU (Excel .xlsx / Word .doc / In - PDF)
+        // =====================================================================
+        const DAY_LABELS = { t2: 'Thứ 2', t3: 'Thứ 3', t4: 'Thứ 4', t5: 'Thứ 5', t6: 'Thứ 6', t7: 'Thứ 7' };
+        const MATRIX_PORTRAIT_FROM = 44; // Bảng tổng hợp có nhiều hơn số dòng này sẽ chuyển sang khổ A4 dọc để vẫn nằm trên 1 trang
+
+        // Ô của bảng: v = nội dung, cs/rs = gộp cột/dòng, left = canh trái, th = ô tiêu đề
+        const xc = (v, cs = 1, rs = 1, left = false, th = false) => ({ v, cs, rs, left, th });
+
+        function getSchoolYear() { return ($('school-year').innerText || '').trim(); }
+
+        function fileSafe(s) {
+            return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
+                .replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'TKB';
+        }
+
+        function safeSheetName(base, used) {
+            const n = String(base).replace(/[\[\]:*?\/\\]/g, '-').trim().slice(0, 31) || 'Sheet';
+            let cand = n, k = 2;
+            while (used.has(cand.toLowerCase())) { const suf = ` (${k++})`; cand = n.slice(0, 31 - suf.length) + suf; }
+            used.add(cand.toLowerCase());
+            return cand;
+        }
+
+        // Ký hiệu ngắn của môn cho bảng tổng hợp: "Ngữ văn" -> "NV", "Tiếng Anh" -> "TA", "HĐTN-HN" -> "HĐTN"
+        function abbrSubject(sub) {
+            const s = String(sub || '').trim(), parts = s.split(/\s+/).filter(Boolean);
+            if (parts.length > 1) return parts.map(w => w.charAt(0)).join('').toUpperCase().slice(0, 4);
+            return s.split('-')[0].slice(0, 5);
+        }
+
+        function buildExportIndex() {
+            const idx = { class: new Map(), teacher: new Map() };
+            globalSchedule.forEach(s => {
+                idx.class.set(`${s.cls}|${s.day}|${s.period}`, s);
+                idx.teacher.set(`${s.teacher}|${s.day}|${s.period}`, s);
+            });
+            return idx;
+        }
+
+        // TKB của 1 lớp hoặc 1 giáo viên (lưới 5 tiết x 6 ngày)
+        function buildGridSpec(type, name, idx) {
+            const t = type === 'teacher' ? dbTeachers.find(x => x.name === name) : null;
+            const header = [[xc('Buổi', 1, 1, false, true), xc('Tiết', 1, 1, false, true), ...DAYS.map(d => xc(DAY_LABELS[d], 1, 1, false, true))]];
+            const body = PERIODS.map((p, i) => {
+                const row = [];
+                if (i === 0) row.push(xc('SÁNG', 1, PERIODS.length, false, true));
+                row.push(xc(`Tiết ${i + 1}`, 1, 1, false, true));
+                DAYS.forEach(d => {
+                    const L = idx[type].get(`${name}|${d}|${p}`);
+                    row.push(xc(L ? (type === 'class' ? `${L.subject}\n${L.teacher}` : `${L.subject}\nLớp ${L.cls}`) : ''));
+                });
+                return row;
+            });
+            return {
+                kind: 'grid',
+                title: type === 'class' ? `THỜI KHÓA BIỂU LỚP ${name}` : `THỜI KHÓA BIỂU GIÁO VIÊN: ${name}`,
+                subtitle: [getSchoolYear(), t && t.dept ? t.dept : ''].filter(Boolean).join(' - '),
+                sheetName: type === 'class' ? `Lớp ${name}` : name,
+                header, body, legend: '', portrait: false,
+                widths: [8, 8, ...DAYS.map(() => 24)],
+                cm: [1.6, 1.6, ...DAYS.map(() => 4.0)]
+            };
+        }
+
+        // Bảng tổng hợp: mỗi lớp / mỗi giáo viên 1 dòng, 30 ô tiết (Thứ 2 - Thứ 7)
+        function buildMatrixSpec(type, idx, portrait) {
+            const isT = type === 'teacher', withDept = isT && !portrait;
+            const names = listEntities(type);
+            const deptOf = new Map(dbTeachers.map(t => [t.name, t.dept]));
+            const head1 = [xc('STT', 1, 2, false, true), xc(isT ? 'Giáo viên' : 'Lớp', 1, 2, false, true)];
+            if (withDept) head1.push(xc('Tổ', 1, 2, false, true));
+            DAYS.forEach(d => head1.push(xc(DAY_LABELS[d], PERIODS.length, 1, false, true)));
+            head1.push(xc('Số tiết', 1, 2, false, true));
+            const head2 = [];
+            DAYS.forEach(() => PERIODS.forEach((p, i) => head2.push(xc(String(i + 1), 1, 1, false, true))));
+
+            const abbrMap = new Map();
+            const body = names.map((n, i) => {
+                const row = [xc(String(i + 1)), xc(n, 1, 1, true)];
+                if (withDept) row.push(xc(deptOf.get(n) || '', 1, 1, true));
+                let count = 0;
+                DAYS.forEach(d => PERIODS.forEach(p => {
+                    const L = idx[type].get(`${n}|${d}|${p}`);
+                    if (L) { count++; if (!isT) { const a = abbrSubject(L.subject); if (!abbrMap.has(a)) abbrMap.set(a, new Set()); abbrMap.get(a).add(L.subject); } }
+                    row.push(xc(L ? (isT ? L.cls : abbrSubject(L.subject)) : ''));
+                }));
+                row.push(xc(String(count)));
+                return row;
+            });
+            const items = [...abbrMap.entries()].map(([a, f]) => [a, [...f]]).filter(([a, f]) => !(f.length === 1 && f[0] === a)).map(([a, f]) => `${a} = ${f.join(' / ')}`);
+
+            const dayCm = portrait ? 0.49 : (isT ? 0.68 : 0.78);
+            const nameCm = portrait ? 2.6 : (isT ? 3.3 : 2.0);
+            return {
+                kind: 'matrix', portrait,
+                title: isT ? 'THỜI KHÓA BIỂU TỔNG HỢP GIÁO VIÊN' : 'THỜI KHÓA BIỂU TỔNG HỢP CÁC LỚP',
+                subtitle: getSchoolYear(),
+                sheetName: isT ? 'TH Giáo viên' : 'TH Các lớp',
+                header: [head1, head2], body,
+                legend: items.length ? 'Ký hiệu môn: ' + items.join('; ') : '',
+                widths: [5, isT ? 24 : 10, ...(withDept ? [18] : []), ...Array(DAYS.length * PERIODS.length).fill(5.5), 8],
+                cm: [portrait ? 0.7 : (isT ? 0.7 : 0.8), nameCm, ...(withDept ? [2.4] : []), ...Array(DAYS.length * PERIODS.length).fill(dayCm), portrait || isT ? 0.8 : 1.0]
+            };
+        }
+
+        // Chuyển spec -> mảng 2 chiều + danh sách ô gộp (cho SheetJS)
+        function specToAoa(sp) {
+            const aoa = [], merges = [];
+            let ncols = 0;
+            sp.header[0].forEach(c => ncols += c.cs);
+            const fullRow = (text) => { aoa.push([text, ...Array(ncols - 1).fill('')]); merges.push({ s: { r: aoa.length - 1, c: 0 }, e: { r: aoa.length - 1, c: ncols - 1 } }); };
+            fullRow(sp.title);
+            fullRow(sp.subtitle || '');
+            aoa.push(new Array(ncols).fill(''));
+
+            const occupied = new Set();
+            const addRows = rows => rows.forEach(row => {
+                const r = aoa.length, line = new Array(ncols).fill('');
+                let c = 0;
+                row.forEach(cell => {
+                    while (occupied.has(`${r}|${c}`)) c++;
+                    line[c] = String(cell.v).replace(/\n/g, ' - ');
+                    for (let dr = 0; dr < cell.rs; dr++) for (let dc = 0; dc < cell.cs; dc++) if (dr || dc) occupied.add(`${r + dr}|${c + dc}`);
+                    if (cell.cs > 1 || cell.rs > 1) merges.push({ s: { r, c }, e: { r: r + cell.rs - 1, c: c + cell.cs - 1 } });
+                    c += cell.cs;
+                });
+                aoa.push(line);
+            });
+            addRows(sp.header);
+            addRows(sp.body);
+            if (sp.legend) { aoa.push(new Array(ncols).fill('')); fullRow(sp.legend); }
+            return { aoa, merges, ncols };
+        }
+
+        function exportSpecsExcel(specs, base) {
+            if (!requireXlsx()) return false;
+            const wb = XLSX.utils.book_new(), used = new Set();
+            specs.forEach(sp => {
+                const { aoa, merges } = specToAoa(sp);
+                const ws = XLSX.utils.aoa_to_sheet(aoa);
+                ws['!merges'] = merges;
+                ws['!cols'] = sp.widths.map(w => ({ wch: w }));
+                XLSX.utils.book_append_sheet(wb, ws, safeSheetName(sp.sheetName, used));
+            });
+            XLSX.writeFile(wb, `${base}.xlsx`);
+            return true;
+        }
+
+        function specToHtml(sp, i) {
+            const dense = sp.kind === 'matrix';
+            const px = cm => Math.round(cm * 37.8);
+            // Thuộc tính + style nằm trực tiếp trên từng ô để Word / LibreOffice / trình duyệt đều hiển thị giống nhau
+            const cellHtml = (c, forceTh, widthAttr) => {
+                const t = forceTh || c.th ? 'th' : 'td';
+                const st = dense ? ` style="font-size:${sp.portrait ? 5.5 : 7}pt;line-height:${sp.portrait ? 6.5 : 8}pt;padding:${c.left ? '0 0 0 2pt' : '0'};white-space:nowrap"` : '';
+                const txt = c.v === '' ? '&nbsp;' : esc(c.v).replace(/\n/g, '<br>');
+                return `<${t}${c.cs > 1 ? ` colspan="${c.cs}"` : ''}${c.rs > 1 ? ` rowspan="${c.rs}"` : ''}${widthAttr} align="${c.left ? 'left' : 'center'}" valign="middle"${st}>${txt}</${t}>`;
+            };
+            const rowHtml = (row, forceTh, withWidths) => {
+                let col = 0;
+                const cells = row.map(c => {
+                    let w = '';
+                    if (withWidths) { w = ` width="${px(sp.cm.slice(col, col + c.cs).reduce((a, b) => a + b, 0))}"`; col += c.cs; }
+                    return cellHtml(c, forceTh, w);
+                }).join('');
+                const h = dense ? (sp.portrait ? 0.3 : 0.36) : (forceTh ? 0.9 : 1.7);
+                return `<tr style="height:${h}cm${dense ? ';mso-height-rule:exactly' : ''}">${cells}</tr>`;
+            };
+            const totalCm = sp.cm.reduce((a, b) => a + b, 0);
+            return `<div${i > 0 ? ' style="page-break-before:always"' : ''}>`
+                + `<h2>${esc(sp.title)}</h2>${sp.subtitle ? `<p class="sub">${esc(sp.subtitle)}</p>` : ''}`
+                + `<table border="1" cellspacing="0" cellpadding="0" align="center" class="${dense ? 'dense' : 'grid'}" width="${px(totalCm)}" style="table-layout:fixed;border-collapse:collapse;width:${totalCm.toFixed(2)}cm">`
+                + `<colgroup>${sp.cm.map(w => `<col width="${px(w)}" style="width:${w}cm">`).join('')}</colgroup>`
+                + sp.header.map((r, k) => rowHtml(r, true, k === 0)).join('') + sp.body.map(r => rowHtml(r, false, false)).join('')
+                + `</table>${sp.legend ? `<p class="note">${esc(sp.legend)}</p>` : ''}</div>`;
+        }
+
+        function buildExportHtml(specs, forWord) {
+            const portrait = !!(specs[0] && specs[0].portrait);
+            const css = `
+                @page { size: ${portrait ? 'A4 portrait' : 'A4 landscape'}; margin: 10mm; }
+                ${forWord ? `@page WordSection1 { size: ${portrait ? '21.0cm 29.7cm' : '29.7cm 21.0cm'}; mso-page-orientation: ${portrait ? 'portrait' : 'landscape'}; margin: 1.0cm 1.0cm 1.0cm 1.0cm; } div.WordSection1 { page: WordSection1; }` : ''}
+                body { font-family: 'Times New Roman', serif; font-size: 12pt; color: #000; }
+                h2 { text-align: center; font-size: 15pt; margin: 0 0 2pt; }
+                p.sub { text-align: center; margin: 0 0 8pt; font-size: 11pt; }
+                p.note { font-size: 8pt; margin: 4pt 0 0; }
+                table { border-collapse: collapse; margin: 0 auto; }
+                th, td { border: 1px solid #000; text-align: center; vertical-align: middle; padding: 2pt; }
+                th { background: #e5e7eb; font-weight: bold; }
+                table.grid th { font-size: 12pt; height: 0.9cm; }
+                table.grid td { font-size: 11pt; height: 1.7cm; }
+                `;
+            const htmlOpen = forWord
+                ? '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'
+                : '<html lang="vi">';
+            const wordMeta = forWord ? '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->' : '';
+            return `<!DOCTYPE html>${htmlOpen}<head><meta charset="utf-8"><title>${esc(specs[0].title)}</title>${wordMeta}<style>${css}</style></head>`
+                + `<body><div class="WordSection1">${specs.map((sp, i) => specToHtml(sp, i)).join('')}</div></body></html>`;
+        }
+
+        function downloadBlob(content, mime, filename) {
+            const blob = new Blob(['\ufeff', content], { type: mime });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 3000);
+        }
+
+        function printHtml(html) {
+            const f = document.createElement('iframe');
+            f.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none;';
+            document.body.appendChild(f);
+            const doc = f.contentWindow.document;
+            doc.open(); doc.write(html); doc.close();
+            setTimeout(() => { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { showToast("Trình duyệt không mở được hộp thoại in.", "error"); } }, 300);
+            setTimeout(() => f.remove(), 60000);
+        }
+
+        function openExportModal() {
+            if (!globalSchedule.length) return showToast("Chưa có TKB để xuất. Hãy xếp lịch trước.", "error");
+            const viewType = $('view-type').value, val = $('main-filter').value;
+            $('exp-current-label').innerText = val ? (viewType === 'class' ? `Lớp ${val}` : `Giáo viên: ${val}`) : 'Chưa chọn lớp / giáo viên ở Bộ lọc';
             const modal = $('export-modal');
             modal.classList.remove('view-hidden');
             modal.classList.add('flex');
         }
-        function closeExportModal() { $('export-modal').classList.add('view-hidden');$('export-modal').classList.remove('flex'); }
+        function closeExportModal() { $('export-modal').classList.add('view-hidden'); $('export-modal').classList.remove('flex'); }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeExportModal(); });
+
+        function runExport() {
+            const pick = n => (document.querySelector(`input[name="${n}"]:checked`) || {}).value;
+            const scope = pick('exp-scope') || 'current', format = pick('exp-format') || 'xlsx';
+            const idx = buildExportIndex();
+            let specs = [], base = 'TKB';
+
+            if (scope === 'current') {
+                const type = $('view-type').value, name = $('main-filter').value;
+                if (!name) return showToast("Hãy chọn lớp / giáo viên ở Bộ lọc trước khi xuất.", "error");
+                specs = [buildGridSpec(type, name, idx)];
+                base = `TKB_${type === 'class' ? 'Lop' : 'GV'}_${fileSafe(name)}`;
+            } else if (scope === 'all-class' || scope === 'all-teacher') {
+                const type = scope === 'all-class' ? 'class' : 'teacher';
+                specs = listEntities(type).map(n => buildGridSpec(type, n, idx));
+                base = type === 'class' ? 'TKB_TatCa_Lop' : 'TKB_TatCa_GV';
+            } else {
+                const type = scope === 'sum-class' ? 'class' : 'teacher';
+                const n = listEntities(type).length;
+                if (n) specs = [buildMatrixSpec(type, idx, format !== 'xlsx' && n > MATRIX_PORTRAIT_FROM)];
+                base = type === 'class' ? 'TKB_TongHop_Lop' : 'TKB_TongHop_GV';
+            }
+            if (!specs.length) return showToast("Không có dữ liệu để xuất.", "error");
+
+            closeExportModal();
+            if (format === 'xlsx') {
+                if (exportSpecsExcel(specs, base)) showToast(`Đã xuất file Excel (${specs.length} sheet)!`, "success");
+            } else if (format === 'word') {
+                downloadBlob(buildExportHtml(specs, true), 'application/msword', `${base}.doc`);
+                showToast("Đã xuất file Word!", "success");
+            } else {
+                printHtml(buildExportHtml(specs, false));
+            }
+        }
 
         window.onload = () => {
             loadDataFromStorage();
