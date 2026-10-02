@@ -184,10 +184,10 @@
                     <div id="mode-auto-settings" class="space-y-4">
                         <div class="p-3 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg text-sm transition">
                             <label class="flex items-start cursor-pointer text-green-900">
-                                <input type="checkbox" id="ai-compact" checked class="mt-0.5 mr-2 rounded text-green-600 focus:ring-green-500"> 
+                                <input type="checkbox" id="ai-compact" checked disabled class="mt-0.5 mr-2 rounded text-green-600 focus:ring-green-500"> 
                                 <div>
-                                    <span class="font-bold">Xếp liên tục từ tiết 1</span>
-                                    <p class="text-[11px] text-green-700 mt-1 leading-tight">Lớp học không có tiết trống, luôn bắt đầu từ tiết 1.</p>
+                                    <span class="font-bold">Xếp liên tục từ tiết 1 (bắt buộc)</span>
+                                    <p class="text-[11px] text-green-700 mt-1 leading-tight">Mỗi buổi lớp học liền mạch từ tiết 1, không có ô trống giữa buổi.</p>
                                 </div>
                             </label>
                         </div>
@@ -195,9 +195,9 @@
                         <!-- TÍNH NĂNG MỚI: ĐỒNG BỘ THEO KHỐI -->
                         <div class="p-3 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg text-sm transition">
                             <label class="flex items-start cursor-pointer text-purple-900">
-                                <input type="checkbox" id="ai-sync-grade" checked class="mt-0.5 mr-2 rounded text-purple-600 focus:ring-purple-500"> 
+                                <input type="checkbox" id="ai-sync-grade" checked disabled class="mt-0.5 mr-2 rounded text-purple-600 focus:ring-purple-500"> 
                                 <div>
-                                    <span class="font-bold">Đồng bộ tiết theo Khối</span>
+                                    <span class="font-bold">Đồng bộ tiết theo Khối (bắt buộc)</span>
                                     <p class="text-[11px] text-purple-700 mt-1 leading-tight">Các lớp cùng khối (VD: 10A1, 10A2) có số tiết mỗi buổi giống nhau; mỗi buổi học tối thiểu 4 tiết (tối đa 5).</p>
                                 </div>
                             </label>
@@ -213,8 +213,8 @@
                             <label class="flex items-start cursor-pointer text-gray-800">
                                 <input type="checkbox" id="ai-dayoff" checked class="mt-0.5 mr-2 rounded text-blue-600 focus:ring-blue-500"> 
                                 <div>
-                                    <span class="font-semibold">Nghỉ ngẫu nhiên 1 ngày/tuần</span>
-                                    <p class="text-[11px] text-gray-500 mt-1 leading-tight">Dành cho GV có tổng tiết dạy &le; 25.</p>
+                                    <span class="font-semibold">Dồn tiết để GV nghỉ ≥ 1 ngày/tuần</span>
+                                    <p class="text-[11px] text-gray-500 mt-1 leading-tight">GV dạy &le; 25 tiết/tuần được xếp liền tiết, dồn lịch để có ngày nghỉ; hạn chế tối đa tiết trống xen giữa.</p>
                                 </div>
                             </label>
                         </div>
@@ -737,7 +737,7 @@
             let k = Math.min(DAYS.length, Math.floor(T / MIN));
             if (k < 1 || T > k * MAX) k = Math.min(DAYS.length, Math.ceil(T / MAX));
             const base = Math.floor(T / k), extra = T % k, map = {};
-            order.slice(0, k).forEach((d, i) => { map[d] = base + (i < extra ? 1 : 0); });
+            order.slice(0, k).forEach((d, i) => { map[d] = Math.min(MAX, base + (i < extra ? 1 : 0)); });
             return { map, ok: base >= MIN && base + (extra ? 1 : 0) <= MAX };
         }
         const gradeOf = c => (String(c).match(/^\d+/) || [c])[0];
@@ -783,96 +783,165 @@
             return { warnings, clsCount: cls, tchCount: tch, classesInGrade };
         }
 
-        function attemptSchedule(baseLessons, opts, clsCount, tchCount, classesInGrade) {
-            const key = (x, d, p) => `${x}|${d}|${p}`;
-            const tSlot = new Map(), cSlot = new Map();
-            const teacherDay = new Map(), classDay = new Map(), subjDay = new Map();
-            const bump = (m, k, n) => m.set(k, (m.get(k) || 0) + n);
-
-            const dayOff = new Map();
-            if (opts.dayOff) dbTeachers.forEach(t => { if ((t.teaching || []).length && (t.teachPeriods || 0) <= 25) dayOff.set(t.name, DAYS[Math.floor(Math.random() * DAYS.length)]); });
-
-            const lessons = baseLessons.map(l => ({ ...l, day: null, period: null }));
-            const quota = dayQuotas(clsCount, opts.syncGrade);
-            const qOf = (c, d) => { const q = (quota.get(c) || {})[d]; return q === undefined ? 0 : q; };
-            // Lớp chỉ được học đúng số tiết định mức của từng buổi (compact: các tiết 1..q)
-            const classOk = (c, d, p) => opts.compact ? PERIODS.indexOf(p) < qOf(c, d) : (classDay.get(`${c}|${d}`) || 0) < qOf(c, d);
-
-            const place = (L, d, p) => {
-                L.day = d; L.period = p;
-                tSlot.set(key(L.teacher, d, p), L); cSlot.set(key(L.cls, d, p), L);
-                bump(teacherDay, `${L.teacher}|${d}`, 1); bump(classDay, `${L.cls}|${d}`, 1); bump(subjDay, `${L.cls}|${L.subject}|${d}`, 1);
-            };
-            const unplace = (L) => {
-                tSlot.delete(key(L.teacher, L.day, L.period)); cSlot.delete(key(L.cls, L.day, L.period));
-                bump(teacherDay, `${L.teacher}|${L.day}`, -1); bump(classDay, `${L.cls}|${L.day}`, -1); bump(subjDay, `${L.cls}|${L.subject}|${L.day}`, -1);
-                L.day = null; L.period = null;
-            };
-            const isFree = (L, d, p, ignoreOff) => (ignoreOff || d !== dayOff.get(L.teacher)) && !tSlot.has(key(L.teacher, d, p)) && !cSlot.has(key(L.cls, d, p));
-
-            const adjacentSame = (L, d, p) => {
-                const i = PERIODS.indexOf(p);
-                return [PERIODS[i - 1], PERIODS[i + 1]].some(q => { if (!q) return false; const o = cSlot.get(key(L.cls, d, q)); return o && o.subject === L.subject; });
-            };
-            
-            const scoreSlot = (L, d, p) => {
-                const idx = PERIODS.indexOf(p);
-                let sc = Math.random() * 2;
-                sc += 3 * (classDay.get(`${L.cls}|${d}`) || 0) + 2 * (teacherDay.get(`${L.teacher}|${d}`) || 0) + 40 * (subjDay.get(`${L.cls}|${L.subject}|${d}`) || 0) + 0.3 * idx;
-                
-                if (!opts.compact) {
-                    let holes = 0;
-                    for (let i = 0; i < idx; i++) if (!cSlot.has(key(L.cls, d, PERIODS[i]))) holes++;
-                    sc += 4 * holes;
-                }
-                
-                if (opts.noConsec && adjacentSame(L, d, p)) sc += 1000;
-                
-                return sc;
-            };
-
-            const order = shuffle(lessons.slice()).sort((a, b) => (tchCount.get(b.teacher) + clsCount.get(b.cls)) - (tchCount.get(a.teacher) + clsCount.get(a.cls)));
-            const pending = [];
-
-            for (const L of order) {
-                let best = null, bestScore = Infinity;
-                for (const d of DAYS) for (const p of PERIODS) {
-                    if (!classOk(L.cls, d, p) || !isFree(L, d, p, false)) continue;
-                    const sc = scoreSlot(L, d, p);
-                    if (sc < bestScore) { bestScore = sc; best = [d, p]; }
-                }
-                if (best) place(L, best[0], best[1]); else pending.push(L);
-            }
-
-            const allSlots = () => shuffle(DAYS.flatMap(d => PERIODS.map(p => [d, p])));
-            let budget = 0;
-            // Sửa lỗi: tìm ô trống hợp lệ; nếu GV bận thì đẩy tiết đang chiếm ô sang chỗ khác (chuỗi tối đa 3 bước)
-            const tryRepair = (L, depth) => {
-                if (--budget < 0) return false;
-                for (const [d, p] of allSlots()) if (classOk(L.cls, d, p) && isFree(L, d, p, true)) { place(L, d, p); return true; }
-                if (depth >= 3) return false;
-                for (const [d, p] of allSlots()) {
-                    if (!classOk(L.cls, d, p) || cSlot.has(key(L.cls, d, p))) continue;
-                    const B = tSlot.get(key(L.teacher, d, p));
-                    if (!B) continue;
-                    unplace(B); place(L, d, p);
-                    if (tryRepair(B, depth + 1)) return true;
-                    unplace(L); place(B, d, p);
-                    if (budget < 0) return false;
-                }
-                return false;
-            };
-            pending.forEach(L => { budget = 600; tryRepair(L, 0); });
-
-            const unplaced = lessons.filter(l => l.day === null);
-            let consec = 0, spread = 0;
-            lessons.forEach(L => {
-                if (L.day === null) return;
-                const nxt = PERIODS[PERIODS.indexOf(L.period) + 1];
-                if (nxt) { const o = cSlot.get(key(L.cls, L.day, nxt)); if (o && o.subject === L.subject) consec++; }
+        // ===== BỘ XẾP LỊCH: mô phỏng luyện kim (simulated annealing) =====
+        // - Mỗi lớp có "khung ô" cố định: mỗi buổi q tiết (4-5), luôn bắt đầu từ tiết 1, lớp cùng khối có khung giống hệt nhau.
+        //   Thuật toán CHỈ hoán đổi các tiết trong cùng 1 lớp => lớp không bao giờ có ô trống giữa buổi, số tiết mỗi buổi luôn đều.
+        // - Ràng buộc cứng: GV không dạy 2 lớp cùng lúc. Ràng buộc mềm: GV dạy liền tiết, dồn lịch để nghỉ >= 1 ngày,
+        //   lớp không học 2 tiết liền / nhiều tiết cùng 1 môn trong 1 buổi.
+        function createSolver(baseLessons, opts, clsCount, tchCount) {
+            const ND = DAYS.length, NP = PERIODS.length, NS = ND * NP;
+            const clsNames = [...clsCount.keys()], tchNames = [...tchCount.keys()];
+            const clsIdx = new Map(clsNames.map((c, i) => [c, i])), tchIdx = new Map(tchNames.map((t, i) => [t, i]));
+            const subIdx = new Map();
+            const nL = baseLessons.length, nC = clsNames.length, nT = tchNames.length;
+            const lt = new Int32Array(nL), lc = new Int32Array(nL), ls = new Int32Array(nL);
+            const ld = new Int8Array(nL).fill(-1), lp = new Int8Array(nL).fill(-1);
+            baseLessons.forEach((l, i) => {
+                lt[i] = tchIdx.get(l.teacher); lc[i] = clsIdx.get(l.cls);
+                if (!subIdx.has(l.subject)) subIdx.set(l.subject, subIdx.size);
+                ls[i] = subIdx.get(l.subject);
             });
-            subjDay.forEach(v => { if (v > 1) spread += v - 1; });
-            return { lessons, unplaced, consec, quality: unplaced.length * 100000 + (opts.noConsec ? consec * 1000 : 0) + spread * 10 };
+            const byClass = Array.from({ length: nC }, () => []);
+            for (let i = 0; i < nL; i++) byClass[lc[i]].push(i);
+
+            // Khung tiết mỗi buổi của từng lớp (đồng bộ theo khối)
+            const quota = dayQuotas(clsCount, true);
+            const qa = new Int8Array(nC * ND);
+            clsNames.forEach((c, ci) => DAYS.forEach((d, di) => { qa[ci * ND + di] = quota.get(c)[d] || 0; }));
+
+            const tc = new Int8Array(nT * NS), tdTot = new Int8Array(nT * ND), wd = new Int8Array(nT);
+            const cg = new Int32Array(nC * NS).fill(-1);
+            const actBy = Array.from({ length: nC }, () => []);
+            const active = [], overflow = [];
+            const minDays = tchNames.map(t => Math.ceil(tchCount.get(t) / NP));
+            const canOff = tchNames.map(t => tchCount.get(t) <= NP * (ND - 1));
+
+            const W = { gap: 6, days: opts.dayOff ? 10 : 0, off: opts.dayOff ? 40 : 0, subj: 30, adj: opts.noConsec ? 150 : 0 };
+            let Wc = 100;
+
+            const attach = (i, d, p) => {
+                ld[i] = d; lp[i] = p; const t = lt[i];
+                tc[t * NS + d * NP + p]++;
+                if (tdTot[t * ND + d]++ === 0) wd[t]++;
+                cg[lc[i] * NS + d * NP + p] = i;
+            };
+            const detach = (i) => {
+                const t = lt[i], d = ld[i];
+                tc[t * NS + d * NP + lp[i]]--;
+                if (--tdTot[t * ND + d] === 0) wd[t]--;
+            };
+
+            const tdCost = (t, d) => {
+                const base = t * NS + d * NP; let first = -1, last = -1, cnt = 0, conf = 0;
+                for (let p = 0; p < NP; p++) {
+                    const c = tc[base + p];
+                    if (c > 0) { if (first < 0) first = p; last = p; cnt++; if (c > 1) conf += c - 1; }
+                }
+                return cnt ? Wc * conf + W.gap * (last - first + 1 - cnt) : 0;
+            };
+            const twCost = (t) => {
+                const w = wd[t]; if (!w) return 0;
+                let c = W.days * Math.max(0, w - minDays[t]);
+                if (canOff[t] && w > ND - 1) c += W.off;
+                return c;
+            };
+            const clsDayCost = (c, d) => {
+                const q = qa[c * ND + d]; if (q < 2) return 0;
+                const base = c * NS + d * NP; let cost = 0;
+                for (let i = 0; i < q; i++) {
+                    const si = ls[cg[base + i]];
+                    for (let j = i + 1; j < q; j++) if (ls[cg[base + j]] === si) { cost += W.subj; if (j === i + 1) cost += W.adj; }
+                }
+                return cost;
+            };
+            const localCost = (tA, tB, c, da, db) => {
+                let s = clsDayCost(c, da); if (db !== da) s += clsDayCost(c, db);
+                if (tA !== tB) {
+                    s += tdCost(tA, da) + tdCost(tB, da) + twCost(tA) + twCost(tB);
+                    if (db !== da) s += tdCost(tA, db) + tdCost(tB, db);
+                }
+                return s;
+            };
+
+            const init = () => {
+                tc.fill(0); tdTot.fill(0); wd.fill(0); cg.fill(-1); active.length = 0; overflow.length = 0;
+                actBy.forEach(a => a.length = 0);
+                byClass.forEach((arr, ci) => {
+                    const slots = [];
+                    for (let d = 0; d < ND; d++) for (let p = 0; p < qa[ci * ND + d]; p++) slots.push([d, p]);
+                    shuffle(arr.slice()).forEach((i, k) => {
+                        if (k < slots.length) { attach(i, slots[k][0], slots[k][1]); active.push(i); actBy[ci].push(i); }
+                        else overflow.push(i);
+                    });
+                });
+            };
+
+            // Chạy SA trong sliceMs mili-giây; trả về tiến độ 0..1 theo tổng thời gian limitMs
+            const T0 = 25, T1 = 0.4;
+            const anneal = (sliceMs, t0, limitMs) => {
+                const start = performance.now();
+                let frac = Math.min(1, (start - t0) / limitMs);
+                if (!active.length) return 1;
+                while (true) {
+                    const now = performance.now();
+                    frac = Math.min(1, (now - t0) / limitMs);
+                    if (frac >= 1 || now - start >= sliceMs) break;
+                    const temp = T0 * Math.pow(T1 / T0, frac);
+                    Wc = frac < 0.6 ? 100 : 100 + 900 * (frac - 0.6) / 0.4;
+                    for (let it = 0; it < 400; it++) {
+                        const A = active[(Math.random() * active.length) | 0], c = lc[A], arr = actBy[c];
+                        const B = arr[(Math.random() * arr.length) | 0];
+                        if (A === B) continue;
+                        const tA = lt[A], tB = lt[B];
+                        if (tA === tB && ls[A] === ls[B]) continue;
+                        const da = ld[A], pa = lp[A], db = ld[B], pb = lp[B];
+                        const before = localCost(tA, tB, c, da, db);
+                        detach(A); detach(B); attach(A, db, pb); attach(B, da, pa);
+                        const delta = localCost(tA, tB, c, da, db) - before;
+                        if (delta > 0 && Math.random() >= Math.exp(-delta / temp)) {
+                            detach(A); detach(B); attach(A, da, pa); attach(B, db, pb);
+                        }
+                    }
+                }
+                return frac;
+            };
+
+            // Kết quả cuối: nếu còn GV trùng lịch (dữ liệu quá chật) thì bỏ tiết trùng và báo thiếu
+            const finalize = () => {
+                const out = baseLessons.map(l => ({ ...l, day: null, period: null }));
+                const taken = new Set();
+                shuffle(active.slice()).forEach(i => {
+                    const k = lt[i] * NS + ld[i] * NP + lp[i];
+                    if (taken.has(k)) return;
+                    taken.add(k); out[i].day = DAYS[ld[i]]; out[i].period = PERIODS[lp[i]];
+                });
+                const cs = new Map();
+                out.forEach(L => { if (L.day !== null) cs.set(`${L.cls}|${L.day}|${L.period}`, L); });
+                let consec = 0;
+                out.forEach(L => {
+                    if (L.day === null) return;
+                    const nx = PERIODS[PERIODS.indexOf(L.period) + 1];
+                    const o = nx && cs.get(`${L.cls}|${L.day}|${nx}`);
+                    if (o && o.subject === L.subject) consec++;
+                });
+                return { lessons: out, unplaced: out.filter(l => l.day === null), consec };
+            };
+            return { init, anneal, finalize };
+        }
+
+        function scheduleStats() {
+            const NP = PERIODS.length, ND = DAYS.length, tm = new Map();
+            globalSchedule.forEach(s => {
+                let o = tm.get(s.teacher); if (!o) { o = {}; tm.set(s.teacher, o); }
+                (o[s.day] = o[s.day] || []).push(PERIODS.indexOf(s.period));
+            });
+            let withOff = 0, eligible = 0, gaps = 0;
+            tm.forEach(o => {
+                let n = 0; const days = Object.keys(o).length;
+                Object.values(o).forEach(a => { n += a.length; gaps += Math.max(...a) - Math.min(...a) + 1 - new Set(a).size; });
+                if (n <= NP * (ND - 1)) { eligible++; if (days < ND) withOff++; }
+            });
+            return { withOff, eligible, gaps };
         }
 
         function setSchedulingUI(busy) {
@@ -889,39 +958,28 @@
 
             setMode('auto');
             const info = analyzeData(lessons);
-            const opts = { 
-                dayOff: $('ai-dayoff').checked, 
-                noConsec: $('ai-noconsecutive').checked,
-                compact: $('ai-compact') ?$('ai-compact').checked : false,
-                syncGrade: $('ai-sync-grade') ?$('ai-sync-grade').checked : false
-            };
-            
-            const bar = $('ai-bar'), pct =$('ai-percent');
+            // Xếp liên tục từ tiết 1 và đồng bộ theo khối là BẮT BUỘC (đảm bảo không còn ô trống / lệch tiết)
+            const opts = { dayOff: $('ai-dayoff').checked, noConsec: $('ai-noconsecutive').checked, compact: true, syncGrade: true };
+
+            const bar = $('ai-bar'), pct = $('ai-percent');
             isScheduling = true;
             $('schedule-report').classList.add('hidden');
             bar.style.width = '0%'; pct.innerText = '0%';
             setSchedulingUI(true);
 
-            const MAX_ATTEMPTS = (opts.compact || opts.syncGrade) ? 45 : 25; 
-            const LIMIT_MS = (opts.compact || opts.syncGrade) ? 3000 : 1500;
+            const LIMIT_MS = Math.min(9000, Math.max(2500, 2000 + lessons.length * 6));
+            let solver;
+            try { solver = createSolver(lessons, opts, info.clsCount, info.tchCount); solver.init(); }
+            catch (err) { isScheduling = false; setSchedulingUI(false); return showToast("Lỗi khi xếp lịch: " + err.message, "error"); }
             const t0 = performance.now();
-            let attempts = 0, best = null;
 
             const step = () => {
                 try {
-                    const sliceStart = performance.now();
-                    do {
-                        const r = attemptSchedule(lessons, opts, info.clsCount, info.tchCount, info.classesInGrade);
-                        attempts++;
-                        if (!best || r.quality < best.quality) best = r;
-                    } while (attempts < MAX_ATTEMPTS && performance.now() - sliceStart < 40 && best.quality >= 1);
-
-                    const elapsed = performance.now() - t0;
-                    const percent = Math.min(100, Math.round(Math.max(attempts / MAX_ATTEMPTS, elapsed / LIMIT_MS) * 100));
+                    const frac = solver.anneal(40, t0, LIMIT_MS);
+                    const percent = Math.round(frac * 100);
                     bar.style.width = percent + '%'; pct.innerText = percent + '%';
-
-                    if (attempts < MAX_ATTEMPTS && best.quality >= 1 && elapsed < LIMIT_MS) { setTimeout(step, 0); return; }
-                    finishSchedule(best, info, opts);
+                    if (frac < 1) { setTimeout(step, 0); return; }
+                    finishSchedule(solver.finalize(), info, opts);
                 } catch (err) {
                     isScheduling = false; setSchedulingUI(false);
                     showToast("Lỗi khi xếp lịch: " + err.message, "error");
@@ -937,6 +995,7 @@
             const missing = new Map();
             best.unplaced.forEach(l => { const k = `${l.teacher}|${l.subject}|${l.cls}`; missing.set(k, (missing.get(k) || 0) + 1); });
             lastReport = {
+                stats: scheduleStats(),
                 placed: globalSchedule.length, total: best.lessons.length, consec: opts.noConsec ? best.consec : 0,
                 warnings: info.warnings, missing: Array.from(missing.entries()).map(([k, n]) => { const [t, s, c] = k.split('|'); return `${t} - Lớp ${c}: thiếu ${n} tiết`; })
             };
@@ -957,6 +1016,7 @@
             const r = lastReport, ok = r.missing.length === 0 && r.warnings.length === 0 && r.consec === 0;
             el.className = `mt-4 text-xs rounded-lg border p-3 leading-relaxed ${ok ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-900'}`;
             let html = `<div class="font-bold text-sm mb-1">Xếp ${r.placed}/${r.total} tiết</div>`;
+            if (r.stats) html += `<div class="mb-1">GV (≤ 25 tiết) được nghỉ ≥ 1 ngày: <b>${r.stats.withOff}/${r.stats.eligible}</b> · Tiết trống xen giữa lịch GV: <b>${r.stats.gaps}</b></div>`;
             if (r.consec > 0) html += `<div class="mb-1">Còn ${r.consec} cặp tiết liền nhau cùng môn.</div>`;
             if (r.missing.length) html += `<div class="font-semibold">Bị thiếu (do trùng lịch):</div><ul class="list-disc pl-4 mb-1">${r.missing.map(m => `<li>${esc(m)}</li>`).join('')}</ul>`;
             if (r.warnings.length) html += `<div class="font-semibold">Cảnh báo dữ liệu:</div><ul class="list-disc pl-4">${r.warnings.map(m => `<li>${esc(m)}</li>`).join('')}</ul>`;
