@@ -198,7 +198,7 @@
                                 <input type="checkbox" id="ai-sync-grade" checked class="mt-0.5 mr-2 rounded text-purple-600 focus:ring-purple-500"> 
                                 <div>
                                     <span class="font-bold">Đồng bộ tiết theo Khối</span>
-                                    <p class="text-[11px] text-purple-700 mt-1 leading-tight">Các lớp trong cùng khối (VD: 10A1, 10A2) sẽ có cùng số tiết trong mỗi buổi.</p>
+                                    <p class="text-[11px] text-purple-700 mt-1 leading-tight">Các lớp cùng khối (VD: 10A1, 10A2) có số tiết mỗi buổi giống nhau; mỗi buổi học tối thiểu 4 tiết (tối đa 5).</p>
                                 </div>
                             </label>
                         </div>
@@ -731,6 +731,27 @@
             return list;
         }
 
+        // Chia T tiết/tuần của 1 lớp vào các buổi (ngày): mỗi buổi 4-5 tiết, các buổi còn lại nghỉ
+        function splitDays(T, order) {
+            const MAX = PERIODS.length, MIN = 4;
+            let k = Math.min(DAYS.length, Math.floor(T / MIN));
+            if (k < 1 || T > k * MAX) k = Math.min(DAYS.length, Math.ceil(T / MAX));
+            const base = Math.floor(T / k), extra = T % k, map = {};
+            order.slice(0, k).forEach((d, i) => { map[d] = base + (i < extra ? 1 : 0); });
+            return { map, ok: base >= MIN && base + (extra ? 1 : 0) <= MAX };
+        }
+        const gradeOf = c => (String(c).match(/^\d+/) || [c])[0];
+        // Định mức số tiết mỗi buổi cho từng lớp; lớp cùng khối dùng chung thứ tự ngày => số tiết mỗi buổi bằng nhau
+        function dayQuotas(clsCount, sync) {
+            const quota = new Map(), orders = {};
+            clsCount.forEach((T, c) => {
+                const g = gradeOf(c);
+                const order = sync ? (orders[g] = orders[g] || shuffle(DAYS.slice())) : shuffle(DAYS.slice());
+                quota.set(c, splitDays(T, order).map);
+            });
+            return quota;
+        }
+
         function analyzeData(lessons) {
             const cap = DAYS.length * PERIODS.length;
             const cls = new Map(), tch = new Map(), warnings = [];
@@ -751,6 +772,14 @@
             
             cls.forEach((n, c) => { if (n > cap) warnings.push(`Lớp ${c} vượt quá ${cap} ô sáng.`); });
             tch.forEach((n, t) => { if (n > cap) warnings.push(`${t} dạy vượt quá ${cap} ô sáng.`); });
+            const gradeTotals = {};
+            cls.forEach((n, c) => {
+                (gradeTotals[gradeOf(c)] = gradeTotals[gradeOf(c)] || []).push([c, n]);
+                if (n <= cap && !splitDays(n, DAYS).ok) warnings.push(`Lớp ${c} có ${n} tiết/tuần: không thể chia mỗi buổi 4-5 tiết.`);
+            });
+            Object.entries(gradeTotals).forEach(([g, arr]) => {
+                if (new Set(arr.map(x => x[1])).size > 1) warnings.push(`Khối ${g}: tổng tiết/tuần các lớp không bằng nhau (${arr.map(([c, n]) => `${c}: ${n}`).join(', ')}) nên số tiết mỗi buổi không thể giống hệt nhau.`);
+            });
             return { warnings, clsCount: cls, tchCount: tch, classesInGrade };
         }
 
@@ -764,6 +793,10 @@
             if (opts.dayOff) dbTeachers.forEach(t => { if ((t.teaching || []).length && (t.teachPeriods || 0) <= 25) dayOff.set(t.name, DAYS[Math.floor(Math.random() * DAYS.length)]); });
 
             const lessons = baseLessons.map(l => ({ ...l, day: null, period: null }));
+            const quota = dayQuotas(clsCount, opts.syncGrade);
+            const qOf = (c, d) => { const q = (quota.get(c) || {})[d]; return q === undefined ? 0 : q; };
+            // Lớp chỉ được học đúng số tiết định mức của từng buổi (compact: các tiết 1..q)
+            const classOk = (c, d, p) => opts.compact ? PERIODS.indexOf(p) < qOf(c, d) : (classDay.get(`${c}|${d}`) || 0) < qOf(c, d);
 
             const place = (L, d, p) => {
                 L.day = d; L.period = p;
@@ -795,58 +828,16 @@
                 
                 if (opts.noConsec && adjacentSame(L, d, p)) sc += 1000;
                 
-                // THUẬT TOÁN ĐỒNG BỘ THEO KHỐI
-                if (opts.syncGrade) {
-                    const gradeMatch = L.cls.match(/^\d+/);
-                    if (gradeMatch) {
-                        const grade = gradeMatch[0];
-                        if (classesInGrade && classesInGrade[grade]) {
-                            const myCount = classDay.get(`${L.cls}|${d}`) || 0;
-                            let maxOtherCount = 0;
-                            
-                            classesInGrade[grade].forEach(c => {
-                                if (c !== L.cls) {
-                                    maxOtherCount = Math.max(maxOtherCount, classDay.get(`${c}|${d}`) || 0);
-                                }
-                            });
-                            
-                            // Bù đắp cho lớp đang ít tiết hơn các lớp khác trong khối vào ngày d
-                            if (myCount < maxOtherCount) {
-                                sc -= 15; // Rất tốt, nên xếp vào để theo kịp các lớp khác
-                            } else if (myCount > maxOtherCount) {
-                                sc += 15; // Xấu, không nên xếp vào làm vượt trội so với các lớp khác
-                            } else {
-                                sc += 5;  // Đang bằng nhau, xếp vào sẽ làm lệch
-                            }
-                        }
-                    }
-                }
                 return sc;
             };
 
             const order = shuffle(lessons.slice()).sort((a, b) => (tchCount.get(b.teacher) + clsCount.get(b.cls)) - (tchCount.get(a.teacher) + clsCount.get(a.cls)));
             const pending = [];
-            
+
             for (const L of order) {
                 let best = null, bestScore = Infinity;
-                let candidateSlots = [];
-                
-                // THUẬT TOÁN XẾP LIÊN TỤC
-                if (opts.compact) {
-                    for (const d of DAYS) {
-                        for (const p of PERIODS) {
-                            if (!cSlot.has(key(L.cls, d, p))) { 
-                                candidateSlots.push([d, p]); 
-                                break; // Chỉ lấy tiết trống sớm nhất trong ngày của lớp
-                            }
-                        }
-                    }
-                } else {
-                    for (const d of DAYS) for (const p of PERIODS) candidateSlots.push([d, p]);
-                }
-
-                for (const [d, p] of candidateSlots) {
-                    if (!isFree(L, d, p, false)) continue;
+                for (const d of DAYS) for (const p of PERIODS) {
+                    if (!classOk(L.cls, d, p) || !isFree(L, d, p, false)) continue;
                     const sc = scoreSlot(L, d, p);
                     if (sc < bestScore) { bestScore = sc; best = [d, p]; }
                 }
@@ -854,76 +845,24 @@
             }
 
             const allSlots = () => shuffle(DAYS.flatMap(d => PERIODS.map(p => [d, p])));
-            const tryRepair = (L) => {
-                if (opts.compact) {
-                    // Mỗi ngày lớp chỉ có 1 ô hợp lệ: tiết trống sớm nhất (để lớp luôn học liên tục từ tiết 1)
-                    const candidateSlots = [];
-                    for (const d of DAYS) {
-                        for (const p of PERIODS) {
-                            if (!cSlot.has(key(L.cls, d, p))) { candidateSlots.push([d, p]); break; }
-                        }
-                    }
-
-                    for (const [d, p] of shuffle(candidateSlots)) {
-                        if (isFree(L, d, p, true)) { place(L, d, p); return true; }
-
-                        // GV đang bận ở ô này vì dạy lớp khác (B) -> thử dời B sang chỗ khác
-                        const B = tSlot.get(key(L.teacher, d, p));
-                        if (!B) continue;
-                        unplace(B);
-
-                        // Phương án 1: tráo B với một tiết X khác của cùng lớp B (lớp B giữ nguyên số ô, không sinh tiết trống)
-                        const bClassLessons = [];
-                        DAYS.forEach(d2 => PERIODS.forEach(p2 => {
-                            const X = cSlot.get(key(B.cls, d2, p2));
-                            if (X && X !== B) bClassLessons.push(X);
-                        }));
-                        for (const X of shuffle(bClassLessons)) {
-                            const dX = X.day, pX = X.period;
-                            unplace(X);
-                            // X.teacher khác L.teacher để L và X không cùng ô một lúc
-                            if (X.teacher !== L.teacher && isFree(B, dX, pX, false) && isFree(X, d, p, false)) {
-                                place(B, dX, pX); place(X, d, p); place(L, d, p);
-                                return true;
-                            }
-                            place(X, dX, pX);
-                        }
-
-                        // Phương án 2: nếu B là tiết cuối ngày của lớp B thì chuyển B sang ô trống sớm nhất của ngày khác
-                        const idx = PERIODS.indexOf(p);
-                        const isLast = (idx === PERIODS.length - 1) || !cSlot.has(key(B.cls, d, PERIODS[idx + 1]));
-                        if (isLast) {
-                            for (const d2 of shuffle(DAYS.slice())) {
-                                if (d2 === d) continue;
-                                const p2 = PERIODS.find(q => !cSlot.has(key(B.cls, d2, q)));
-                                if (p2 && isFree(B, d2, p2, false)) {
-                                    place(B, d2, p2);
-                                    if (isFree(L, d, p, true)) { place(L, d, p); return true; }
-                                    unplace(B);
-                                }
-                            }
-                        }
-                        place(B, d, p);
-                    }
-                    return false;
-                }
-
-                // Sửa lỗi xếp thông thường
-                for (const [d, p] of allSlots()) if (isFree(L, d, p, true)) { place(L, d, p); return true; }
+            let budget = 0;
+            // Sửa lỗi: tìm ô trống hợp lệ; nếu GV bận thì đẩy tiết đang chiếm ô sang chỗ khác (chuỗi tối đa 3 bước)
+            const tryRepair = (L, depth) => {
+                if (--budget < 0) return false;
+                for (const [d, p] of allSlots()) if (classOk(L.cls, d, p) && isFree(L, d, p, true)) { place(L, d, p); return true; }
+                if (depth >= 3) return false;
                 for (const [d, p] of allSlots()) {
-                    const tb = tSlot.get(key(L.teacher, d, p)), cb = cSlot.get(key(L.cls, d, p));
-                    if (tb && cb && tb !== cb) continue;
-                    const B = tb || cb;
-                    unplace(B);
-                    for (const [d2, p2] of allSlots()) {
-                        if (d2 === d && p2 === p) continue;
-                        if (isFree(B, d2, p2, false)) { place(L, d, p); place(B, d2, p2); return true; }
-                    }
-                    place(B, d, p);
+                    if (!classOk(L.cls, d, p) || cSlot.has(key(L.cls, d, p))) continue;
+                    const B = tSlot.get(key(L.teacher, d, p));
+                    if (!B) continue;
+                    unplace(B); place(L, d, p);
+                    if (tryRepair(B, depth + 1)) return true;
+                    unplace(L); place(B, d, p);
+                    if (budget < 0) return false;
                 }
                 return false;
             };
-            pending.forEach(L => tryRepair(L));
+            pending.forEach(L => { budget = 600; tryRepair(L, 0); });
 
             const unplaced = lessons.filter(l => l.day === null);
             let consec = 0, spread = 0;
