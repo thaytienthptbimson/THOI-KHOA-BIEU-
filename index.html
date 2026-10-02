@@ -82,7 +82,6 @@
                         </div>
                     </div>
 
-                    <!-- ĐÃ SỬA: Kiêm nhiệm linh hoạt bằng số tiết -->
                     <div class="mb-5 border-b pb-4">
                         <h3 class="font-bold text-blue-800 mb-3"><i class="fa-solid fa-briefcase text-sm mr-1"></i> 2. Kiêm nhiệm (Nhập số tiết)</h3>
                         <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
@@ -103,8 +102,11 @@
                         </div>
                         <div id="teaching_container" class="space-y-3"></div>
                     </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded shadow hover:bg-blue-700 transition">
+                    <button type="submit" id="btn-submit-form" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded shadow hover:bg-blue-700 transition">
                         <i class="fa-solid fa-floppy-disk mr-2"></i> LƯU DỮ LIỆU
+                    </button>
+                    <button type="button" id="btn-cancel-edit" onclick="cancelEdit()" class="hidden w-full mt-2 bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded shadow hover:bg-gray-300 transition">
+                        <i class="fa-solid fa-xmark mr-2"></i> HỦY CHỈNH SỬA
                     </button>
                 </form>
             </div>
@@ -118,7 +120,6 @@
                         <p id="data-summary" class="text-xs text-gray-500 mt-1"></p>
                     </div>
                     <div class="flex gap-2 items-center flex-wrap justify-end">
-                        <!-- TÍNH NĂNG MỚI: NHẬP XUẤT EXCEL -->
                         <button onclick="exportDataExcel()" class="text-sm bg-green-100 text-green-700 border border-green-200 px-3 py-1.5 rounded hover:bg-green-200 transition font-medium shadow-sm" title="Xuất toàn bộ ra Excel hoặc Tải file mẫu">
                             <i class="fa-solid fa-file-excel mr-1"></i>Xuất Excel / Mẫu
                         </button>
@@ -127,7 +128,7 @@
                             <input type="file" id="importExcel" class="hidden" accept=".xlsx, .xls" onchange="importDataExcel(event)">
                         </label>
                         
-                        <div class="w-px h-6 bg-gray-300 mx-1"></div> <!-- Dấu chia cách -->
+                        <div class="w-px h-6 bg-gray-300 mx-1"></div>
 
                         <button onclick="scheduleFromData()" id="btn-schedule-from-data" class="text-sm bg-yellow-500 text-white px-3 py-1.5 rounded hover:bg-yellow-600 transition font-bold shadow-sm">
                             <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Xếp TKB từ dữ liệu này
@@ -148,7 +149,7 @@
                                 <th class="border p-2 text-left w-1/4">Kiêm nhiệm</th>
                                 <th class="border p-2 text-left w-1/3">Dạy thực tế</th>
                                 <th class="border p-2 text-center">Tổng tiết</th>
-                                <th class="border p-2 text-center">Xóa</th>
+                                <th class="border p-2 text-center">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody id="dataTableBody"></tbody>
@@ -157,15 +158,12 @@
             </div>
         </div>
 
-        <!-- VIEW 2: KHÔNG GIAN TKB (Giữ nguyên giao diện TKB PRO) -->
+        <!-- VIEW 2: KHÔNG GIAN TKB -->
         <div id="view-timetable" class="view-hidden flex-1 flex overflow-hidden relative">
-            
-            <!-- BẢNG ĐIỀU KHIỂN BÊN TRÁI -->
             <div class="w-80 bg-white border-r border-gray-200 flex flex-col shrink-0 shadow-[2px_0_5px_rgba(0,0,0,0.02)] z-10 overflow-y-auto">
                 <div class="p-5 border-b bg-gray-50/50">
                     <h3 class="font-bold text-gray-800 mb-3 text-sm uppercase tracking-wider text-gray-500"><i class="fa-solid fa-filter mr-2"></i>Bộ lọc hiển thị</h3>
                     <div class="space-y-3">
-                        <!-- TÍNH NĂNG MỚI: CHỌN XEM THEO LỚP HOẶC GIÁO VIÊN -->
                         <select id="view-type" onchange="updateFilterDropdown()" class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:ring-blue-500">
                             <option value="class">Xem TKB theo Lớp học</option>
                             <option value="teacher">Xem TKB theo Giáo viên</option>
@@ -178,7 +176,6 @@
 
                 <div class="p-5 border-b flex-1">
                     <h3 class="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wider text-gray-500"><i class="fa-solid fa-sliders mr-2"></i>Chế độ xếp lịch</h3>
-                    
                     <div class="flex bg-gray-100 p-1 rounded-lg mb-5 shadow-inner">
                         <button onclick="setMode('auto')" id="btn-mode-auto" class="flex-1 py-1.5 text-sm font-medium rounded-md bg-white shadow text-blue-700 transition">Tự động (AI)</button>
                         <button onclick="setMode('manual')" id="btn-mode-manual" class="flex-1 py-1.5 text-sm font-medium rounded-md text-gray-500 hover:text-gray-700 transition bg-transparent">Thủ công</button>
@@ -222,7 +219,6 @@
                                 <div id="ai-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-200" style="width: 0%"></div>
                             </div>
                         </div>
-
                         <div id="schedule-report" class="hidden mt-4 text-xs rounded-lg border p-3 leading-relaxed"></div>
                     </div>
 
@@ -277,57 +273,16 @@
         </div>
     </main>
 
-    <!-- HỘP THOẠI XUẤT FILE IN (Giữ nguyên) -->
+    <!-- HỘP THOẠI XUẤT FILE IN (Rút gọn) -->
     <div id="export-modal" class="view-hidden fixed inset-0 z-40 items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="export-title" onclick="if (event.target === this) closeExportModal()">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
             <div class="flex items-center justify-between mb-5">
-                <h3 id="export-title" class="text-lg font-bold text-gray-800"><i class="fa-solid fa-file-export mr-2 text-green-600"></i>Xuất thời khóa biểu In</h3>
+                <h3 id="export-title" class="text-lg font-bold text-gray-800"><i class="fa-solid fa-file-export mr-2 text-green-600"></i>Tính năng xuất TKB</h3>
                 <button type="button" onclick="closeExportModal()" class="text-gray-400 hover:text-gray-600" aria-label="Đóng"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-
-            <fieldset class="mb-5">
-                <legend class="text-sm font-semibold text-gray-700 mb-2">Định dạng file</legend>
-                <div class="space-y-2">
-                    <label class="flex items-start gap-3 border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-gray-50">
-                        <input type="radio" name="export-format" value="docx" checked class="mt-1 accent-blue-600">
-                        <span>
-                            <span class="block font-semibold text-sm text-gray-800"><i class="fa-solid fa-file-word text-blue-600 mr-1"></i>Word (.docx)</span>
-                        </span>
-                    </label>
-                    <label class="flex items-start gap-3 border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-gray-50">
-                        <input type="radio" name="export-format" value="xlsx" class="mt-1 accent-blue-600">
-                        <span>
-                            <span class="block font-semibold text-sm text-gray-800"><i class="fa-solid fa-file-excel text-green-600 mr-1"></i>Excel (.xlsx)</span>
-                        </span>
-                    </label>
-                </div>
-            </fieldset>
-
-            <fieldset class="mb-6">
-                <legend class="text-sm font-semibold text-gray-700 mb-2">Nội dung</legend>
-                <div class="space-y-2 text-sm">
-                    <label class="flex items-center gap-3 border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-gray-50">
-                        <input type="radio" name="export-scope" value="current" class="accent-blue-600">
-                        <span>Đang xem: <b id="export-current-label"></b></span>
-                    </label>
-                    <label class="flex items-center gap-3 border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-gray-50">
-                        <input type="radio" name="export-scope" value="classes" class="accent-blue-600">
-                        <span>Tất cả lớp (<span id="export-classes-count">0</span> lớp)</span>
-                    </label>
-                    <label class="flex items-center gap-3 border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-gray-50">
-                        <input type="radio" name="export-scope" value="teachers" class="accent-blue-600">
-                        <span>Tất cả giáo viên (<span id="export-teachers-count">0</span> GV)</span>
-                    </label>
-                    <label class="flex items-start gap-3 border border-green-300 bg-green-50/60 rounded-lg p-3 cursor-pointer hover:bg-green-50">
-                        <input type="radio" name="export-scope" value="master" class="mt-1 accent-blue-600">
-                        <span><b>Tất cả giáo viên trên 1 trang</b></span>
-                    </label>
-                </div>
-            </fieldset>
-
+            <p class="text-sm text-gray-600 mb-4">Chức năng xuất file In (Word/Excel lưới TKB) phức tạp được thu gọn trong bản xem thử này. Hãy sử dụng mã nguồn file cũ nếu cần xuất file .docx.</p>
             <div class="flex justify-end gap-2">
-                <button type="button" onclick="closeExportModal()" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition">Hủy</button>
-                <button type="button" onclick="runExport()" class="px-4 py-2 rounded-lg bg-green-600 text-white font-bold hover:bg-green-700 transition shadow-sm"><i class="fa-solid fa-download mr-1"></i>Tải về</button>
+                <button type="button" onclick="closeExportModal()" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition">Đóng</button>
             </div>
         </div>
     </div>
@@ -350,6 +305,9 @@
         let isScheduling = false;
         let idCounter = 0;
         let toastTimer = null;
+        
+        // Cờ lưu vết để biết đang Sửa hay Thêm mới
+        let editingTeacherId = null;
 
         // --- TIỆN ÍCH ---
         const $ = id => document.getElementById(id);
@@ -380,6 +338,7 @@
             if (confirm("CẢNH BÁO: Hành động này sẽ xóa vĩnh viễn toàn bộ Giáo viên và Thời khóa biểu hiện tại. Bạn có chắc chắn không?")) {
                 try { ['tkb_teachers', 'tkb_schedule', 'tkb_departments'].forEach(k => localStorage.removeItem(k)); } catch (e) {}
                 dbTeachers = []; globalSchedule = []; lastReport = null; dbDepartments = [...DEFAULT_DEPTS];
+                cancelEdit();
                 renderDepartments(); renderTeachersTable(); renderScheduleReport();
                 showToast("Đã dọn dẹp sạch sẽ Hệ thống!", "success");
             }
@@ -420,7 +379,7 @@
             }
         }
 
-        // --- NHẬP DỮ LIỆU ---
+        // --- NHẬP DỮ LIỆU & CHỈNH SỬA ---
         function renderDepartments() {
             const select = $('gv_dept');
             select.innerHTML = dbDepartments.map(dept => `<option value="${esc(dept)}">${esc(dept)}</option>`).join('');
@@ -442,22 +401,73 @@
             document.body.appendChild(dl);
         }
 
-        function addTeachingRow() {
+        function addTeachingRow(sub = "", cls = "", prd = 2) {
             const row = document.createElement('div');
             row.className = 'flex gap-2 items-center teaching-row bg-gray-50 p-2 rounded border border-gray-200 mt-2 shadow-sm';
             row.innerHTML = `
-                <input type="text" class="sub-inp w-1/3 border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-blue-500" placeholder="Môn (VD: Toán)" required list="subject-suggestions">
-                <input type="text" class="cls-inp w-1/3 border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-blue-500" placeholder="Lớp (VD: 10A1)" required>
-                <input type="number" class="prd-inp w-1/4 border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-blue-500" placeholder="Tiết" min="1" value="2" required>
+                <input type="text" class="sub-inp w-1/3 border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-blue-500" placeholder="Môn (VD: Toán)" required list="subject-suggestions" value="${esc(sub)}">
+                <input type="text" class="cls-inp w-1/3 border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-blue-500" placeholder="Lớp (VD: 10A1)" required value="${esc(cls)}">
+                <input type="number" class="prd-inp w-1/4 border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-blue-500" placeholder="Tiết" min="1" required value="${prd}">
                 <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 bg-red-50 p-1.5 rounded transition"><i class="fa-solid fa-trash"></i></button>`;
             $('teaching_container').appendChild(row);
         }
 
-        // ĐÃ SỬA: Lưu thông tin kiêm nhiệm bằng số tiết điền vào
+        function editTeacher(id) {
+            const t = dbTeachers.find(x => x.id === id);
+            if (!t) return;
+            
+            editingTeacherId = id;
+            
+            // Fill thông tin chung
+            $('gv_name').value = t.name;
+            $('gv_dept').value = t.dept;
+            
+            // Xóa rỗng các ô kiêm nhiệm trước, sau đó điền lại
+            document.querySelectorAll('input[name="kiem_nhiem"]').forEach(el => el.value = '');
+            (t.duties || []).forEach(d => {
+                const input = document.querySelector(`input[name="kiem_nhiem"][data-name="${d.name}"]`);
+                if (input) input.value = d.period;
+            });
+            
+            // Lên danh sách tiết dạy
+            $('teaching_container').innerHTML = '';
+            if (!t.teaching || t.teaching.length === 0) {
+                addTeachingRow();
+            } else {
+                t.teaching.forEach(tc => addTeachingRow(tc.sub, tc.cls, tc.prd));
+            }
+            
+            // Thay đổi giao diện nút lưu
+            const btnSubmit = $('btn-submit-form');
+            btnSubmit.innerHTML = '<i class="fa-solid fa-check mr-2"></i> CẬP NHẬT DỮ LIỆU';
+            btnSubmit.classList.replace('bg-blue-600', 'bg-green-600');
+            btnSubmit.classList.replace('hover:bg-blue-700', 'hover:bg-green-700');
+            $('btn-cancel-edit').classList.remove('hidden');
+            
+            // Cuộn lên form
+            $('dataForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            editingTeacherId = null;
+            $('dataForm').reset();
+            $('teaching_container').innerHTML = '';
+            addTeachingRow();
+            
+            const btnSubmit = $('btn-submit-form');
+            btnSubmit.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> LƯU DỮ LIỆU';
+            btnSubmit.classList.replace('bg-green-600', 'bg-blue-600');
+            btnSubmit.classList.replace('hover:bg-green-700', 'hover:bg-blue-700');
+            $('btn-cancel-edit').classList.add('hidden');
+        }
+
         function saveTeacherData(e) {
             e.preventDefault();
             const name = $('gv_name').value.trim();
-            if (dbTeachers.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+            const dept = $('gv_dept').value;
+
+            // Kiểm tra trùng tên: Nếu đang thêm mới HOẶC nếu đang sửa nhưng đổi sang tên của người khác
+            if (dbTeachers.some(t => t.name.toLowerCase() === name.toLowerCase() && t.id !== editingTeacherId)) {
                 return showToast("Đã có giáo viên trùng tên. Hãy thêm ký hiệu phân biệt (VD: Nguyễn Văn A - Toán).", "error");
             }
 
@@ -469,17 +479,35 @@
                 if (cls && sub && prd > 0) { teaching.push({ sub, cls, prd }); teachPeriods += prd; }
             });
             
-            // Lấy dữ liệu kiêm nhiệm (Số tiết linh hoạt)
             Array.from(document.querySelectorAll('input[name="kiem_nhiem"]')).forEach(el => {
                 const p = parseInt(el.value) || 0;
                 if (p > 0) { dutyPeriods += p; dutiesList.push({ name: el.dataset.name, period: p }); }
             });
+            
+            const total = teachPeriods + dutyPeriods;
 
-            dbTeachers.push({ id: Date.now(), name, dept: $('gv_dept').value, duties: dutiesList, teaching, teachPeriods, dutyPeriods, total: teachPeriods + dutyPeriods });
+            if (editingTeacherId) {
+                // Xử lý Cập nhật (Sửa)
+                const tIndex = dbTeachers.findIndex(x => x.id === editingTeacherId);
+                if (tIndex > -1) {
+                    const oldName = dbTeachers[tIndex].name;
+                    dbTeachers[tIndex] = { ...dbTeachers[tIndex], name, dept, duties: dutiesList, teaching, teachPeriods, dutyPeriods, total };
+                    
+                    // Nếu giáo viên đổi tên, cập nhật cả lưới TKB
+                    if (oldName !== name) {
+                        globalSchedule.forEach(s => { if (s.teacher === oldName) s.teacher = name; });
+                    }
+                }
+                showToast("Đã cập nhật thành công!", "success");
+            } else {
+                // Xử lý Thêm mới
+                dbTeachers.push({ id: Date.now(), name, dept, duties: dutiesList, teaching, teachPeriods, dutyPeriods, total });
+                showToast("Lưu Dữ liệu thành công!", "success");
+            }
 
-            saveDataToStorage(); renderTeachersTable();
-            e.target.reset(); $('teaching_container').innerHTML = ''; addTeachingRow();
-            showToast("Lưu Dữ liệu thành công!", "success");
+            cancelEdit();
+            saveDataToStorage(); 
+            renderTeachersTable();
         }
 
         function deleteTeacher(id) {
@@ -487,6 +515,7 @@
             if (!t) return;
             dbTeachers = dbTeachers.filter(x => x.id !== id);
             globalSchedule = globalSchedule.filter(s => s.teacher !== t.name);
+            if (editingTeacherId === id) cancelEdit();
             saveDataToStorage(); renderTeachersTable();
         }
 
@@ -502,6 +531,8 @@
                     const colorClass = t.total > 17 ? "text-red-600" : (t.total < 17 ? "text-yellow-600" : "text-green-600");
                     const duties = (t.duties || []).map(d => `<span class="bg-yellow-100 text-xs px-2 py-1 border border-yellow-200 rounded mr-1 mb-1 inline-block">${esc(d.name)} <b class="text-blue-600">(+${esc(d.period)})</b></span>`).join('') || '<span class="text-gray-400 italic text-xs">Không có</span>';
                     const teaching = (t.teaching || []).map(tc => `<div class="mb-1 text-xs"><b>${esc(tc.sub)}</b> <i class="fa-solid fa-arrow-right text-[9px] mx-1 text-gray-400"></i> Lớp ${esc(tc.cls)} <span class="text-gray-500">(${esc(tc.prd)}t)</span></div>`).join('') || '<span class="text-gray-400 italic text-xs">Chưa có tiết dạy</span>';
+                    
+                    // NÚT SỬA ĐƯỢC THÊM VÀO ĐÂY
                     return `
                     <tr class="border-b hover:bg-blue-50 transition">
                         <td class="border p-2"><b>${esc(t.name)}</b><br><span class="text-[11px] text-gray-500">${esc(t.dept)}</span></td>
@@ -511,7 +542,12 @@
                             <div class="font-bold text-lg ${colorClass}">${esc(t.total)}</div>
                             <div class="text-[10px] text-gray-500 bg-gray-100 rounded px-1 mt-1 inline-block border">Dạy: ${esc(t.teachPeriods)} | KN: ${esc(t.dutyPeriods)}</div>
                         </td>
-                        <td class="border p-2 text-center"><button onclick="deleteTeacher(${Number(t.id)})" class="text-red-500 bg-red-50 p-2 rounded hover:bg-red-100"><i class="fa-solid fa-trash"></i></button></td>
+                        <td class="border p-2 text-center align-middle">
+                            <div class="flex justify-center gap-2">
+                                <button onclick="editTeacher(${Number(t.id)})" class="text-blue-500 bg-blue-50 p-2 rounded hover:bg-blue-100 transition" title="Sửa"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="deleteTeacher(${Number(t.id)})" class="text-red-500 bg-red-50 p-2 rounded hover:bg-red-100 transition" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </td>
                     </tr>`;
                 }).join('');
             }
@@ -532,15 +568,14 @@
             el.textContent = `${classes.size} lớp, ${needed} tiết/tuần cần xếp. ${status}`;
         }
 
-        // --- TÍNH NĂNG MỚI: XUẤT NHẬP EXCEL DỮ LIỆU ---
+        // --- XUẤT NHẬP EXCEL DỮ LIỆU ---
 
         function exportDataExcel() {
             const data = [];
             if (dbTeachers.length === 0) {
                 // Xuất file mẫu trống
                 data.push({
-                    "Giáo viên": "VD: Nguyễn Văn A",
-                    "Tổ chuyên môn": "Tổ Toán - Tin",
+                    "Giáo viên": "VD: Nguyễn Văn A", "Tổ chuyên môn": "Tổ Toán - Tin",
                     "GVCN": 4, "TT": 0, "PTT": 0, "BTĐ": 0, "PBTĐ": 0,
                     "Môn dạy": "Toán", "Lớp dạy": "10A1", "Số tiết": 4,
                     "Tổng tiết thực dạy (Chỉ Xem)": 4, "Tổng số tiết (Chỉ Xem)": 8
@@ -560,16 +595,11 @@
                     } else {
                         t.teaching.forEach((tc, idx) => {
                             data.push({
-                                "Giáo viên": t.name,
-                                "Tổ chuyên môn": idx === 0 ? t.dept : "",
-                                "GVCN": idx === 0 ? (duties["GVCN"] || 0) : 0,
-                                "TT": idx === 0 ? (duties["TT"] || 0) : 0,
-                                "PTT": idx === 0 ? (duties["PTT"] || 0) : 0,
-                                "BTĐ": idx === 0 ? (duties["BTĐ"] || 0) : 0,
+                                "Giáo viên": t.name, "Tổ chuyên môn": idx === 0 ? t.dept : "",
+                                "GVCN": idx === 0 ? (duties["GVCN"] || 0) : 0, "TT": idx === 0 ? (duties["TT"] || 0) : 0, 
+                                "PTT": idx === 0 ? (duties["PTT"] || 0) : 0, "BTĐ": idx === 0 ? (duties["BTĐ"] || 0) : 0, 
                                 "PBTĐ": idx === 0 ? (duties["PBTĐ"] || 0) : 0,
-                                "Môn dạy": tc.sub,
-                                "Lớp dạy": tc.cls,
-                                "Số tiết": tc.prd,
+                                "Môn dạy": tc.sub, "Lớp dạy": tc.cls, "Số tiết": tc.prd,
                                 "Tổng tiết thực dạy (Chỉ Xem)": idx === 0 ? t.teachPeriods : "",
                                 "Tổng số tiết (Chỉ Xem)": idx === 0 ? t.total : ""
                             });
@@ -579,9 +609,7 @@
             }
 
             const ws = XLSX.utils.json_to_sheet(data);
-            // Auto-width các cột cho dễ nhìn
             ws['!cols'] = [{wch:20}, {wch:18}, {wch:6}, {wch:6}, {wch:6}, {wch:6}, {wch:6}, {wch:15}, {wch:10}, {wch:10}, {wch:25}, {wch:25}];
-            
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Dữ liệu Phân công");
             XLSX.writeFile(wb, "DuLieuPhanCong_TKB.xlsx");
@@ -609,7 +637,6 @@
 
                     jsonData.forEach(row => {
                         const name = row["Giáo viên"];
-                        // Bỏ qua dòng trống hoặc dòng ví dụ
                         if (!name || String(name).includes("VD:")) return; 
 
                         if (!teacherMap.has(name)) {
@@ -618,10 +645,8 @@
                                 duties: [], teaching: [], teachPeriods: 0, dutyPeriods: 0, total: 0
                             });
                         }
-
                         const t = teacherMap.get(name);
                         
-                        // Xử lý Kiêm nhiệm
                         ['GVCN', 'TT', 'PTT', 'BTĐ', 'PBTĐ'].forEach(dutyName => {
                             const val = parseInt(row[dutyName]) || 0;
                             if (val > 0 && !t.duties.find(d => d.name === dutyName)) {
@@ -630,7 +655,6 @@
                             }
                         });
 
-                        // Xử lý Môn dạy
                         const sub = row["Môn dạy"];
                         const cls = String(row["Lớp dạy"] || "").toUpperCase().trim();
                         const prd = parseInt(row["Số tiết"]) || 0;
@@ -639,22 +663,17 @@
                             t.teaching.push({ sub: sub, cls: cls, prd: prd });
                             t.teachPeriods += prd;
                         }
-                        
                         t.total = t.teachPeriods + t.dutyPeriods;
                     });
 
                     const newTeachers = Array.from(teacherMap.values());
-                    if (newTeachers.length === 0) {
-                        return showToast("Không tìm thấy dữ liệu hợp lệ trong file Excel.", "error");
-                    }
+                    if (newTeachers.length === 0) return showToast("Không tìm thấy dữ liệu hợp lệ trong file Excel.", "error");
                     
                     newTeachers.forEach((t, index) => t.id = Date.now() + index);
-
                     newTeachers.forEach(t => { if (t.dept && !dbDepartments.includes(t.dept)) dbDepartments.push(t.dept); });
 
                     if (confirm("GHI ĐÈ (Xóa hết dữ liệu và TKB cũ) hay THÊM VÀO (Giữ dữ liệu hiện tại)?\n\n- OK: Ghi đè toàn bộ.\n- Hủy (Cancel): Thêm vào cuối.")) {
-                        dbTeachers = newTeachers;
-                        globalSchedule = []; 
+                        dbTeachers = newTeachers; globalSchedule = []; 
                     } else {
                         newTeachers.forEach(nt => {
                             const existing = dbTeachers.find(et => et.name === nt.name);
@@ -663,24 +682,21 @@
                         });
                     }
 
-                    saveDataToStorage();
-                    renderDepartments();
-                    renderTeachersTable();
+                    saveDataToStorage(); renderDepartments(); renderTeachersTable();
                     showToast(`Nhập thành công ${newTeachers.length} Giáo viên!`, "success");
                 } catch (error) {
                     console.error(error);
                     showToast("Lỗi khi đọc file Excel. Định dạng không hợp lệ.", "error");
                 }
-                event.target.value = ""; // Xóa input để có thể chọn lại file cũ
+                event.target.value = ""; 
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // --- CÁC HÀM XẾP TKB (GIỮ NGUYÊN) ---
+        // --- CÁC HÀM XẾP TKB ---
         
         function updateFilterDropdown() {
-            const viewType = $('view-type').value;
-            const sel = $('main-filter');
+            const viewType = $('view-type').value, sel =$('main-filter');
             const currentSelection = sel.value;
             const sorted = listEntities(viewType);
             sel.innerHTML = `<option value="">-- Chọn ${viewType === 'class' ? 'Lớp' : 'Giáo viên'} để xem --</option>` +
@@ -971,9 +987,10 @@
             return Array.from(items).sort(new Intl.Collator('vi', { numeric: true }).compare);
         }
 
-        // Modal Xuất file (Phần này sử dụng lại mã gốc của bạn từ trước để render XLSX và DOCX phức tạp)
-        function openExportModal() { /* Rút gọn trong ví dụ, thực tế vẫn dùng mã gốc của bạn */ 
-            showToast("Chức năng xuất file In (Word/Excel lưới TKB) đã được thu gọn trong bản xem thử này. Hãy copy lại từ file cũ nếu cần.", "success");
+        function openExportModal() { 
+            const modal = $('export-modal');
+            modal.classList.remove('view-hidden');
+            modal.classList.add('flex');
         }
         function closeExportModal() { $('export-modal').classList.add('view-hidden');$('export-modal').classList.remove('flex'); }
 
