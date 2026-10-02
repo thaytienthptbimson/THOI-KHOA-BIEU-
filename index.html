@@ -56,7 +56,7 @@
             <h2 id="topbar-title" class="text-lg font-bold text-gray-700">Quản lý Dữ liệu Phân công</h2>
             <div class="flex items-center space-x-6">
                 <div class="text-sm font-medium text-blue-800 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full shadow-sm flex items-center">
-                    <i class="fa-solid fa-graduation-cap mr-2"></i> <span id="school-year">Năm học 2026-2017</span>
+                    <i class="fa-solid fa-graduation-cap mr-2"></i> <span id="school-year">Năm học 2026-2027</span>
                 </div>
             </div>
         </header>
@@ -79,13 +79,13 @@
                     </div>
 
                     <div class="mb-5 border-b pb-4">
-                        <h3 class="font-bold text-blue-800 mb-3"><i class="fa-solid fa-briefcase text-sm mr-1"></i> 2. Kiêm nhiệm</h3>
+                        <h3 class="font-bold text-blue-800 mb-3"><i class="fa-solid fa-briefcase text-sm mr-1"></i> 2. Kiêm nhiệm (Nhập số tiết)</h3>
                         <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="GVCN"><span>Chủ nhiệm (+4)</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Tổ trưởng"><span>Tổ trưởng (+3)</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Tổ phó"><span>Tổ phó (+1)</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Bí thư Đoàn"><span>BT Đoàn (+6)</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" name="kiem_nhiem" value="Công đoàn"><span>Công đoàn (+3)</span></label>
+                            <label class="flex items-center space-x-2 font-medium"><span class="w-12">GVCN:</span><input type="number" name="kiem_nhiem" data-name="GVCN" min="0" placeholder="0" class="w-16 border border-gray-300 rounded px-2 py-1 focus:ring-blue-500"></label>
+                            <label class="flex items-center space-x-2 font-medium"><span class="w-12">TT:</span><input type="number" name="kiem_nhiem" data-name="TT" min="0" placeholder="0" class="w-16 border border-gray-300 rounded px-2 py-1 focus:ring-blue-500"></label>
+                            <label class="flex items-center space-x-2 font-medium"><span class="w-12">PTT:</span><input type="number" name="kiem_nhiem" data-name="PTT" min="0" placeholder="0" class="w-16 border border-gray-300 rounded px-2 py-1 focus:ring-blue-500"></label>
+                            <label class="flex items-center space-x-2 font-medium"><span class="w-12">BTĐ:</span><input type="number" name="kiem_nhiem" data-name="BTĐ" min="0" placeholder="0" class="w-16 border border-gray-300 rounded px-2 py-1 focus:ring-blue-500"></label>
+                            <label class="flex items-center space-x-2 font-medium"><span class="w-12">PBTĐ:</span><input type="number" name="kiem_nhiem" data-name="PBTĐ" min="0" placeholder="0" class="w-16 border border-gray-300 rounded px-2 py-1 focus:ring-blue-500"></label>
                         </div>
                     </div>
 
@@ -149,7 +149,6 @@
                 <div class="p-5 border-b bg-gray-50/50">
                     <h3 class="font-bold text-gray-800 mb-3 text-sm uppercase tracking-wider text-gray-500"><i class="fa-solid fa-filter mr-2"></i>Bộ lọc hiển thị</h3>
                     <div class="space-y-3">
-                        <!-- TÍNH NĂNG MỚI: CHỌN XEM THEO LỚP HOẶC GIÁO VIÊN -->
                         <select id="view-type" onchange="updateFilterDropdown()" class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:ring-blue-500">
                             <option value="class">Xem TKB theo Lớp học</option>
                             <option value="teacher">Xem TKB theo Giáo viên</option>
@@ -328,7 +327,6 @@
 
     <!-- SCRIPTS -->
     <script>
-        const DUTY_PERIODS = { "GVCN": 4, "Bí thư Đoàn": 6, "Tổ phó": 1, "Tổ trưởng": 3, "Phó BT Đoàn": 2, "Công đoàn": 3 };
         const DAYS = ['t2', 't3', 't4', 't5', 't6', 't7'];
         const PERIODS = ['s1', 's2', 's3', 's4', 's5'];
         const DEFAULT_DEPTS = ['Tổ Toán - Tin', 'Tổ Ngữ văn', 'Tổ Ngoại ngữ', 'Tổ Lý - Hóa - Sinh'];
@@ -388,8 +386,6 @@
 
         // --- 1. CHUYỂN TRANG ---
         function switchView(viewName) {
-            // Lưu ý: classList.replace() trả về true/false chứ không trả về classList,
-            // nên không được nối chuỗi .classList.add(...) phía sau (lỗi cũ làm hàm này bị dừng giữa chừng).
             document.querySelectorAll('.menu-item').forEach(el => {
                 const active = el.id === `menu-${viewName}`;
                 el.classList.toggle('bg-blue-800', active);
@@ -472,8 +468,14 @@
                 const prd = parseInt(row.querySelector('.prd-inp').value);
                 if (cls && sub && prd > 0) { teaching.push({ sub, cls, prd }); teachPeriods += prd; }
             });
-            Array.from(document.querySelectorAll('input[name="kiem_nhiem"]:checked')).forEach(el => {
-                const p = DUTY_PERIODS[el.value] || 0; dutyPeriods += p; dutiesList.push({ name: el.value, period: p });
+            
+            // Xử lý dữ liệu nhập số tiết Kiêm nhiệm
+            Array.from(document.querySelectorAll('input[name="kiem_nhiem"]')).forEach(el => {
+                const p = parseInt(el.value) || 0;
+                if (p > 0) {
+                    dutyPeriods += p; 
+                    dutiesList.push({ name: el.dataset.name, period: p });
+                }
             });
 
             dbTeachers.push({ id: Date.now(), name, dept: $('gv_dept').value, duties: dutiesList, teaching, teachPeriods, dutyPeriods, total: teachPeriods + dutyPeriods });
@@ -1393,9 +1395,9 @@
         function mockData() {
             dbTeachers = [
                 { id: 1, name: "Thầy Toán 1", dept: "Tổ Toán - Tin", duties: [{ name: "GVCN", period: 4 }], teaching: [{ sub: "Toán", cls: "10A1", prd: 4 }, { sub: "Toán", cls: "10A2", prd: 4 }], teachPeriods: 8, dutyPeriods: 4, total: 12 },
-                { id: 2, name: "Cô Văn 1", dept: "Tổ Ngữ văn", duties: [{ name: "Bí thư Đoàn", period: 6 }], teaching: [{ sub: "Ngữ văn", cls: "10A1", prd: 4 }, { sub: "Ngữ văn", cls: "10A2", prd: 4 }, { sub: "HĐTN-HN", cls: "10A1", prd: 2 }], teachPeriods: 10, dutyPeriods: 6, total: 16 },
+                { id: 2, name: "Cô Văn 1", dept: "Tổ Ngữ văn", duties: [{ name: "BTĐ", period: 6 }], teaching: [{ sub: "Ngữ văn", cls: "10A1", prd: 4 }, { sub: "Ngữ văn", cls: "10A2", prd: 4 }, { sub: "HĐTN-HN", cls: "10A1", prd: 2 }], teachPeriods: 10, dutyPeriods: 6, total: 16 },
                 { id: 3, name: "Thầy Anh 1", dept: "Tổ Ngoại ngữ", duties: [], teaching: [{ sub: "Tiếng Anh", cls: "10A1", prd: 3 }, { sub: "Tiếng Anh", cls: "10A2", prd: 3 }], teachPeriods: 6, dutyPeriods: 0, total: 6 },
-                { id: 4, name: "Cô Lý 1", dept: "Tổ Lý - Hóa - Sinh", duties: [{ name: "Tổ phó", period: 1 }], teaching: [{ sub: "Vật lý", cls: "10A1", prd: 2 }, { sub: "Vật lý", cls: "10A2", prd: 2 }], teachPeriods: 4, dutyPeriods: 1, total: 5 }
+                { id: 4, name: "Cô Lý 1", dept: "Tổ Lý - Hóa - Sinh", duties: [{ name: "PTT", period: 1 }], teaching: [{ sub: "Vật lý", cls: "10A1", prd: 2 }, { sub: "Vật lý", cls: "10A2", prd: 2 }], teachPeriods: 4, dutyPeriods: 1, total: 5 }
             ];
             globalSchedule = []; lastReport = null;   // TKB cũ không còn khớp với dữ liệu mẫu
             saveDataToStorage(); renderScheduleReport(); renderTeachersTable();
